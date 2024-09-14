@@ -2,6 +2,7 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
+import 'tsconfig-paths/register';
 import { messageRouter } from './message/message.route';
 import { conversationRouter } from './conversation/conversation.route';
 import { authRouter } from './auth/auth.route';
