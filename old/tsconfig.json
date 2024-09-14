@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".", // Definir la base del proyecto
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true
+  }
+}
