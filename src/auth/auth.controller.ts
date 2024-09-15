@@ -22,7 +22,8 @@ export class AuthController {
   ) {
     try {
       const user = await this.authService.register(email, password);
-      return res.json(user);
+      const { token } = await this.authService.login(email, password);
+      return res.json({ token, user });
     } catch (error) {
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
