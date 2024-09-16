@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AuthGuard } from '../auth/auth.guard'; // Middleware de autenticación
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 
 @Controller('chats')
 export class ChatController {

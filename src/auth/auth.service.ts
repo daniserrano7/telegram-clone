@@ -18,6 +18,7 @@ export class AuthService {
     const existingUser = await this.db.user.findUnique({
       where: { email },
     });
+
     if (existingUser) throw new Error('User already exists');
 
     const hashedPassword = await bcrypt.hash(password, 10);
