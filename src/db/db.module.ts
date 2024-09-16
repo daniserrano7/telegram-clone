@@ -7,4 +7,4 @@ import { DbService } from './db.service';
   providers: [DbService],
   exports: [DbService],
 })
-export class UserModule {}
+export class DbModule {}
