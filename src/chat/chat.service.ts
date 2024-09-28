@@ -1,11 +1,31 @@
 import { Injectable } from '@nestjs/common';
 import { DbService } from 'src/db/db.service';
+import { CreateChatResponseDto } from './chat.dto';
 
 @Injectable()
 export class ChatService {
   constructor(private readonly db: DbService) {}
 
   async createChat(memberIds: number[]) {
+    const foundChats = await this.db.chat.findMany({
+      where: {
+        members: {
+          every: {
+            id: {
+              in: memberIds,
+            },
+          },
+        },
+      },
+      include: {
+        members: true,
+      },
+    });
+
+    if (foundChats.length > 0) {
+      throw new Error('Chat already exists');
+    }
+
     const chat = await this.db.chat.create({
       data: {
         members: {
@@ -13,10 +33,22 @@ export class ChatService {
         },
       },
       include: {
-        members: true,
+        members: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
       },
     });
-    return chat;
+
+    const response: CreateChatResponseDto = {
+      id: chat.id,
+      createdAt: chat.createdAt,
+      memberIds: chat.members.map((member) => member.id),
+    };
+
+    return response;
   }
 
   async getUserChats(userId: number) {
