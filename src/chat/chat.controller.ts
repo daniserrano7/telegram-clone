@@ -1,4 +1,3 @@
-// src/chat/chat.controller.ts
 import {
   Controller,
   Post,
@@ -12,7 +11,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { AuthGuard } from '../auth/auth.guard'; // Middleware de autenticación
+import { AuthGuard } from '../auth/auth.guard';
 import type { Request, Response } from 'express';
 
 @Controller('chats')
@@ -22,13 +21,13 @@ export class ChatController {
   @UseGuards(AuthGuard)
   @Post()
   async createChat(
-    @Req() req: Request,
+    @Req() _: Request,
     @Body('userIds') userIds: number[],
     @Res() res: Response,
   ) {
     if (!userIds || !userIds.length) {
       return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'MemberIds are required',
+        message: 'field memberIds is required',
       });
     }
 
@@ -44,7 +43,6 @@ export class ChatController {
     }
   }
 
-  // Ruta para obtener todos los chats de un usuario
   @UseGuards(AuthGuard)
   @Get('user/:userId')
   async getUserChats(
@@ -67,16 +65,22 @@ export class ChatController {
     }
   }
 
-  // Ruta para agregar un mensaje a un chat específico
+  // Add message to chat
   @UseGuards(AuthGuard)
   @Post(':chatId/messages')
   async addMessage(
-    @Param('chatId') chatId: number,
+    @Param('chatId', ParseIntPipe) chatId: number,
     @Body('content') content: string,
-    @Req() req: Request & { user: any }, // Obtener el usuario autenticado desde el token JWT
+    @Req() req: Request & { user: { id: number } },
     @Res() res: Response,
   ) {
-    const userId = req.user.id; // userId sacado del token JWT, inyectado por AuthGuard
+    const userId = req.user.id;
+    if (!content) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'field content is required',
+      });
+    }
+
     try {
       const message = await this.chatService.addMessage(
         chatId,
@@ -92,9 +96,13 @@ export class ChatController {
     }
   }
 
+  // Get chat messages
   @UseGuards(AuthGuard)
   @Get(':chatId/messages')
-  async getChatMessages(@Param('chatId') chatId: number, @Res() res: Response) {
+  async getChatMessages(
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Res() res: Response,
+  ) {
     try {
       const messages = await this.chatService.getChatMessages(chatId);
       if (!messages.length) {

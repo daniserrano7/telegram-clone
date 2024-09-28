@@ -10,7 +10,6 @@ export class UserService {
     return result.map((user) => ({
       id: user.id,
       email: user.email,
-      password: user.password,
     }));
   }
 
@@ -23,7 +22,10 @@ export class UserService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
-    return user;
+    return {
+      id: user.id,
+      email: user.email,
+    };
   }
 
   async deleteUser(userId: number) {

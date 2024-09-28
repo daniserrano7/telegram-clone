@@ -4,6 +4,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  ParseIntPipe,
   Res,
   HttpStatus,
   NotFoundException,
@@ -33,7 +34,10 @@ export class UserController {
   // Get user by ID
   @UseGuards(AuthGuard)
   @Get(':id')
-  async getUserById(@Param('id') userId: number, @Res() res: Response) {
+  async getUserById(
+    @Param('id', ParseIntPipe) userId: number,
+    @Res() res: Response,
+  ) {
     try {
       const user = await this.userService.getUserById(userId);
       return res.status(HttpStatus.OK).json(user);
@@ -53,7 +57,10 @@ export class UserController {
   // Delete user
   @UseGuards(AuthGuard)
   @Delete(':id')
-  async deleteUser(@Param('id') userId: number, @Res() res: Response) {
+  async deleteUser(
+    @Param('id', ParseIntPipe) userId: number,
+    @Res() res: Response,
+  ) {
     try {
       const result = await this.userService.deleteUser(userId);
       return res.status(HttpStatus.OK).json(result);
