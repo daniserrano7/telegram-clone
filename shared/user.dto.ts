@@ -5,7 +5,6 @@ export type OnlineStatus = 'ONLINE' | 'OFFLINE';
 export interface User {
   id: UserId;
   username: string;
-  email: string;
   bio: string;
   onlineStatus: OnlineStatus;
   lastConnection: Date;

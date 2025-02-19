@@ -14,18 +14,14 @@ export class AuthService {
   }
 
   async register({
-    email,
     username,
     password,
   }: {
-    email: string;
     username: string;
     password: string;
   }) {
     const existingUser = await this.db.user.findFirst({
-      where: {
-        OR: [{ email }, { username }],
-      },
+      where: { username },
     });
 
     if (existingUser)
@@ -34,13 +30,11 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await this.db.user.create({
       data: {
-        email,
         username,
         password: hashedPassword,
       },
       select: {
         id: true,
-        email: true,
         username: true,
         createdAt: true,
         updatedAt: true,
@@ -60,7 +54,6 @@ export class AuthService {
 
     const userWithouthPassword = {
       id: user.id,
-      email: user.email,
       onlineStatus: user.onlineStatus,
       lastConnection: user.lastConnection,
       bio: user.bio,

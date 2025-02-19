@@ -12,7 +12,6 @@ import { ConfigModule } from '@nestjs/config';
 import { User } from '@prisma/client';
 
 const USER_ID = 1;
-const USER_EMAIL = 'test@email.com';
 const USERNAME = 'testuser';
 
 describe('UserController', () => {
@@ -49,10 +48,11 @@ describe('UserController', () => {
     const mockUsers: User[] = [
       {
         id: USER_ID,
-        email: USER_EMAIL,
         username: USERNAME,
         password: 'password',
         onlineStatus: 'ONLINE',
+        bio: 'bio',
+        avatarUrl: 'avatarUrl',
         lastConnection: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -74,10 +74,11 @@ describe('UserController', () => {
   it('should return a single user by id', async () => {
     const mockUser: User = {
       id: USER_ID,
-      email: USER_EMAIL,
       username: USERNAME,
       password: 'password',
       onlineStatus: 'ONLINE',
+      bio: 'bio',
+      avatarUrl: 'avatarUrl',
       lastConnection: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),

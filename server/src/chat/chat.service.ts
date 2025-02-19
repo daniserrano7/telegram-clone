@@ -36,7 +36,6 @@ export class ChatService {
           select: {
             id: true,
             username: true,
-            email: true,
             createdAt: true,
             updatedAt: true,
             deletedAt: true,
@@ -61,7 +60,6 @@ export class ChatService {
           select: {
             id: true,
             username: true,
-            email: true,
             createdAt: true,
             updatedAt: true,
             deletedAt: true,
@@ -95,7 +93,6 @@ export class ChatService {
           select: {
             id: true,
             username: true,
-            email: true,
             avatarUrl: true,
             bio: true,
             onlineStatus: true,
@@ -132,7 +129,6 @@ export class ChatService {
           select: {
             id: true,
             username: true,
-            email: true,
             avatarUrl: true,
             bio: true,
             createdAt: true,

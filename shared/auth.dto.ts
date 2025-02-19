@@ -9,9 +9,9 @@ export type SwapDatesWithStrings<T> = {
 };
 
 export interface RegisterRequestDto {
-  email: string;
   username: string;
   password: string;
+  confirmPassword: string;
 }
 
 export interface RegisterResponseDto {

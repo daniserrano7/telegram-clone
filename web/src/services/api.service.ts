@@ -24,9 +24,9 @@ export class ApiService {
   }
 
   async register({
-    email,
     username,
     password,
+    confirmPassword,
   }: RegisterRequestDto): ServiceResponse<RegisterResponseDto> {
     try {
       const res = await fetch(`${this.BASE_URL}/auth/register`, {
@@ -34,7 +34,7 @@ export class ApiService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, username, password }),
+        body: JSON.stringify({ username, password, confirmPassword }),
       });
 
       if (res.status !== 201) {

@@ -42,8 +42,10 @@ describe('ChatService', () => {
         {
           id: USER_ID,
           username: 'username1',
-          email: 'user@email.com',
           onlineStatus: 'ONLINE',
+          bio: 'bio',
+          avatarUrl: 'avatarUrl',
+
           lastConnection,
           createdAt,
           updatedAt,
@@ -52,8 +54,9 @@ describe('ChatService', () => {
         {
           id: 2,
           username: 'username2',
-          email: 'user2@email.com',
           onlineStatus: 'ONLINE',
+          bio: 'bio',
+          avatarUrl: 'avatarUrl',
           lastConnection,
           createdAt,
           updatedAt,
@@ -72,7 +75,6 @@ describe('ChatService', () => {
         {
           id: USER_ID,
           username: 'username1',
-          email: 'user@email.com',
           onlineStatus: 'ONLINE',
           lastConnection,
           createdAt,
@@ -82,7 +84,6 @@ describe('ChatService', () => {
         {
           id: 2,
           username: 'username2',
-          email: 'user2@email.com',
           onlineStatus: 'ONLINE',
           lastConnection,
           createdAt,
@@ -121,7 +122,6 @@ describe('ChatService', () => {
           select: {
             id: true;
             username: true;
-            email: true;
             createdAt: true;
             updatedAt: true;
             deletedAt: true;
@@ -137,7 +137,6 @@ describe('ChatService', () => {
         {
           id: USER_ID,
           username: 'username1',
-          email: 'test@email.com',
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,
@@ -145,7 +144,6 @@ describe('ChatService', () => {
         {
           id: 2,
           username: 'username2',
-          email: 'test@email.com',
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,
@@ -182,9 +180,10 @@ describe('ChatService', () => {
           {
             id: USER_ID,
             username: 'username1',
-            email: 'test@email.com',
-            password: 'password',
             onlineStatus: 'ONLINE',
+            bio: 'bio',
+            avatarUrl: 'avatarUrl',
+            password: 'password',
             lastConnection: new Date(),
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -193,9 +192,10 @@ describe('ChatService', () => {
           {
             id: 2,
             username: 'username2',
-            email: 'test2@email.com',
-            password: 'password',
             onlineStatus: 'ONLINE',
+            bio: 'bio',
+            avatarUrl: 'avatarUrl',
+            password: 'password',
             lastConnection: new Date(),
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -212,9 +212,10 @@ describe('ChatService', () => {
           {
             id: USER_ID,
             username: 'username1',
-            email: 'test@email.com',
-            password: 'password',
+            bio: 'bio',
+            avatarUrl: 'avatarUrl',
             onlineStatus: 'ONLINE',
+            password: 'password',
             lastConnection: new Date(),
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -223,9 +224,10 @@ describe('ChatService', () => {
           {
             id: 3,
             username: 'username3',
-            email: 'test3@email.com',
-            password: 'password',
             onlineStatus: 'ONLINE',
+            bio: 'bio',
+            avatarUrl: 'avatarUrl',
+            password: 'password',
             lastConnection: new Date(),
             createdAt: new Date(),
             updatedAt: new Date(),

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth.store';
 
 export const RegisterPage = () => {
@@ -7,6 +7,10 @@ export const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const register = useAuthStore((state) => state.register);
+  const isLogged = useAuthStore((state) => state.isLogged);
+  if (isLogged) {
+    return <Navigate to="/chats" />;
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     setIsLoading(true);
@@ -15,10 +19,10 @@ export const RegisterPage = () => {
 
     try {
       const formData = new FormData(e.currentTarget);
-      const email = formData.get('email') as string;
       const username = formData.get('username') as string;
       const password = formData.get('password') as string;
-      await register({ email, username, password });
+      const confirmPassword = formData.get('confirmPassword') as string;
+      await register({ username, password, confirmPassword });
 
       setError('');
       navigate('/chats');
@@ -54,7 +58,7 @@ export const RegisterPage = () => {
               </div>
             </div>
             <div className="relative">
-              <div className="absolute inset-2 backdrop-blur-md -mx-8 -my-3 rounded-2xl" />
+              <div className="absolute inset-0 bg-background-primary/80 backdrop-blur-md -mx-8 -my-3 rounded-2xl" />
               <h1 className="text-3xl font-bold text-font mb-2 relative">
                 Create Account
               </h1>
@@ -68,23 +72,6 @@ export const RegisterPage = () => {
           <div className="bg-elevation-contrast/95 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border/5 backdrop-blur-xl mb-8">
             <div className="p-6">
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="email"
-                    className="text-sm font-medium text-font"
-                  >
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-font placeholder-font-subtle/50 transition-shadow"
-                    placeholder="Enter your email"
-                  />
-                </div>
-
                 <div className="space-y-2">
                   <label
                     htmlFor="username"
@@ -116,6 +103,23 @@ export const RegisterPage = () => {
                     required
                     className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-font placeholder-font-subtle/50 transition-shadow"
                     placeholder="Create a password"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="confirmPassword"
+                    className="text-sm font-medium text-font"
+                  >
+                    Confirm Password
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    required
+                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-font placeholder-font-subtle/50 transition-shadow"
+                    placeholder="Confirm your password"
                   />
                 </div>
 

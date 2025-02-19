@@ -21,13 +21,7 @@ export class AuthController {
     @Res() res: Response,
   ) {
     try {
-      const { email, username, password } = registerUserDto;
-
-      if (!email) {
-        return res
-          .status(HttpStatus.BAD_REQUEST)
-          .json({ error: 'Email is required' });
-      }
+      const { username, password, confirmPassword } = registerUserDto;
 
       if (!username) {
         return res
@@ -40,8 +34,20 @@ export class AuthController {
           .status(HttpStatus.BAD_REQUEST)
           .json({ error: 'Password is required' });
       }
+
+      if (!confirmPassword) {
+        return res
+          .status(HttpStatus.BAD_REQUEST)
+          .json({ error: 'Password confirmation is required' });
+      }
+
+      if (password !== confirmPassword) {
+        return res
+          .status(HttpStatus.BAD_REQUEST)
+          .json({ error: 'Passwords do not match' });
+      }
+
       const { user, token } = await this.authService.register({
-        email,
         username,
         password,
       });

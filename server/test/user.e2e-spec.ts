@@ -76,7 +76,6 @@ describe('User tests (e2e)', () => {
 
     expect(registerResult1.body).toHaveProperty('token');
     expect(registerUser1.id).toBeDefined();
-    expect(registerUser1.email).toEqual(email1);
     expect(registerUser1.username).toEqual(username1);
     expect(registerUser1.createdAt).toBeDefined();
     expect(registerUser1.updatedAt).toBeDefined();
@@ -94,7 +93,6 @@ describe('User tests (e2e)', () => {
 
     expect(loginResult1.body).toHaveProperty('token');
     expect(loginUser1.id).toBeDefined();
-    expect(loginUser1.email).toEqual(email1);
     expect(loginUser1.username).toEqual(username1);
     expect(loginUser1.createdAt).toBeDefined();
     expect(loginUser1.updatedAt).toBeDefined();
@@ -118,7 +116,6 @@ describe('User tests (e2e)', () => {
 
     expect(registerResult2.body).toHaveProperty('token');
     expect(registerUser2.id).toBeDefined();
-    expect(registerUser2.email).toEqual(email2);
     expect(registerUser2.username).toEqual(username2);
     expect(registerUser2.createdAt).toBeDefined();
     expect(registerUser2.updatedAt).toBeDefined();
@@ -136,7 +133,6 @@ describe('User tests (e2e)', () => {
 
     expect(loginResult2.body).toHaveProperty('token');
     expect(loginUser2.id).toBeDefined();
-    expect(loginUser2.email).toEqual(email2);
     expect(loginUser2.username).toEqual(username2);
     expect(loginUser2.createdAt).toBeDefined();
     expect(loginUser2.updatedAt).toBeDefined();

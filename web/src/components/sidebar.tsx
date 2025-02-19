@@ -13,7 +13,6 @@ import { useChatStore } from 'src/stores/chat.store';
 import { useAuthStore } from 'src/stores/auth.store';
 import { SettingsPanel } from 'src/components/settings-panel';
 import { ProfileDialog } from 'src/components/profile-dialog';
-import { formatLastActive } from 'src/utils/date';
 import { useUserStore } from 'src/stores/user.store';
 
 type ChatPreview = {
