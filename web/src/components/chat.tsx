@@ -25,19 +25,114 @@ export const Chat = ({
   onBackClick,
   showBackButton,
 }: ChatHeaderProps) => {
+  const activeChat = useChatStore((state) => state.activeChat);
+
+  if (!activeChat) {
+    return (
+      <div className="flex-1 flex flex-col h-full bg-background-primary relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Subtle dot pattern */}
+          <div
+            className="absolute inset-0 opacity-[0.2]"
+            style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, var(--color-font) 1px, transparent 0)`,
+              backgroundSize: '20px 20px',
+            }}
+          />
+
+          {/* Animated gradient orbs */}
+          <div className="absolute inset-0">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px] animate-blob" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px] animate-blob animation-delay-2000" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/3 rounded-full blur-[120px] animate-blob animation-delay-4000" />
+          </div>
+
+          {/* Decorative lines */}
+          <div
+            className="absolute inset-0 opacity-[0.02]"
+            style={{
+              backgroundImage: `
+                linear-gradient(45deg, var(--color-font) 1px, transparent 1px),
+                linear-gradient(-45deg, var(--color-font) 1px, transparent 1px)
+              `,
+              backgroundSize: '60px 60px',
+            }}
+          />
+        </div>
+
+        <div className="flex-1 flex items-center justify-center relative">
+          <div className="text-center space-y-6">
+            {/* Animated illustration */}
+            <div className="relative w-48 h-48 mx-auto">
+              <div className="absolute inset-0 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+              <div className="relative flex items-center justify-center h-full">
+                <div className="bubble-container">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="speech-bubble"
+                      style={
+                        {
+                          '--delay': `${i * 0.2}s`,
+                          '--scale': `${1 - i * 0.1}`,
+                        } as React.CSSProperties
+                      }
+                    >
+                      <div className="w-24 h-24 bg-elevation/80 backdrop-blur-sm rounded-tl-2xl rounded-tr-2xl rounded-br-2xl rounded-bl-md flex items-center justify-center shadow-lg">
+                        <span className="text-4xl transform -rotate-12 hover:scale-110 transition-transform cursor-default">
+                          {['💬', '✨', '👋'][i]}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <h2 className="text-xl font-medium text-font">
+                <span className="opacity-50">Ready to</span>{' '}
+                <span className="text-primary">connect</span>
+                <span className="opacity-50">?</span>
+              </h2>
+              <p className="text-sm text-font-subtle mt-2 animate-pulse">
+                Pick a chat or start a new one
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 flex flex-col h-full">
-      <div className="flex-shrink-0">
+    <div className="flex-1 flex flex-col h-full bg-background-primary relative">
+      {/* Background patterns */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 1px 1px, var(--color-font) 0.5px, transparent 0),
+            linear-gradient(to bottom, var(--color-primary) 0%, transparent 100%)
+          `,
+          backgroundSize: '24px 24px, 100% 100%',
+          opacity: 0.03,
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div className="flex-shrink-0 relative z-10">
         <ChatHeader
           toggleChatInfo={toggleChatInfo}
           onBackClick={onBackClick}
           showBackButton={showBackButton}
         />
       </div>
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative z-10">
         <MessageList />
       </div>
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 relative z-10">
         <MessageInput />
       </div>
     </div>
@@ -459,3 +554,72 @@ const ChatHeader = ({
     </>
   );
 };
+
+// Add animations at the end of the file
+const style = document.createElement('style');
+style.textContent = `
+  .bubble-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .speech-bubble {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(var(--scale, 1));
+    animation: bubble-float 2s ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+  }
+
+  @keyframes bubble-float {
+    0%, 100% {
+      transform: translate(-50%, -50%) scale(var(--scale, 1));
+    }
+    50% {
+      transform: translate(-50%, calc(-50% - 12px)) scale(var(--scale, 1));
+    }
+  }
+
+  .pattern-grid {
+    background-image: linear-gradient(var(--color-font) 1px, transparent 1px),
+      linear-gradient(to right, var(--color-font) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity: 0.2;
+  }
+
+  .pattern-dots {
+    background-image: radial-gradient(circle at 1px 1px, var(--color-font) 1px, transparent 0);
+    background-size: 24px 24px;
+    opacity: 0.3;
+  }
+
+  @keyframes blob {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    25% {
+      transform: translate(20px, -20px) scale(1.05);
+    }
+    50% {
+      transform: translate(-20px, 20px) scale(0.95);
+    }
+    75% {
+      transform: translate(-20px, -20px) scale(1.05);
+    }
+  }
+
+  .animate-blob {
+    animation: blob 10s infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+`;
+document.head.appendChild(style);
