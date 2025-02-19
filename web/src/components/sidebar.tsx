@@ -155,7 +155,6 @@ const ChatList = ({ onChatSelect }: { onChatSelect?: () => void }) => {
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const activeChat = useChatStore((state) => state.activeChat);
   const findPartner = useChatStore((state) => state.getChatPartner);
-  // const userStatuses = useUserStore((state) => state.userStatuses);
   const contacts = useUserStore((state) => state.contacts);
 
   console.log('CHATS', chats);
@@ -168,6 +167,32 @@ const ChatList = ({ onChatSelect }: { onChatSelect?: () => void }) => {
       ? `${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
       : date.toLocaleDateString();
   };
+
+  if (chats.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+        <div className="w-16 h-16 bg-elevation rounded-full flex items-center justify-center mb-4">
+          <svg
+            className="w-8 h-8 text-font-subtle"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium text-font mb-2">No chats yet</h3>
+        <p className="text-font-subtle text-sm max-w-[240px]">
+          Use the search bar above to find people and start a new conversation
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto">
