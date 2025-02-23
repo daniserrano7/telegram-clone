@@ -34,6 +34,14 @@ export default {
           success: 'var(--color-icon-success)',
           error: 'var(--color-icon-error)',
         },
+        input: {
+          background: 'var(--color-input-background)',
+          'background-hover': 'var(--color-input-background-hover)',
+          'background-active': 'var(--color-input-background-active)',
+          border: 'var(--color-input-border)',
+          'border-hover': 'var(--color-input-border-hover)',
+          'border-active': 'var(--color-input-border-active)',
+        },
       },
       animation: {
         'message-in': 'message-in 300ms ease-out',

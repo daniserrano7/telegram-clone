@@ -40,29 +40,10 @@ export const Chat = ({
               backgroundSize: '20px 20px',
             }}
           />
-
-          {/* Animated gradient orbs */}
-          <div className="absolute inset-0">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px] animate-blob" />
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px] animate-blob animation-delay-2000" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/3 rounded-full blur-[120px] animate-blob animation-delay-4000" />
-          </div>
-
-          {/* Decorative lines */}
-          <div
-            className="absolute inset-0 opacity-[0.02]"
-            style={{
-              backgroundImage: `
-                linear-gradient(45deg, var(--color-font) 1px, transparent 1px),
-                linear-gradient(-45deg, var(--color-font) 1px, transparent 1px)
-              `,
-              backgroundSize: '60px 60px',
-            }}
-          />
         </div>
 
         <div className="flex-1 flex items-center justify-center relative">
-          <div className="text-center space-y-6">
+          <div className="text-center">
             {/* Animated illustration */}
             <div className="relative w-48 h-48 mx-auto">
               <div className="absolute inset-0 bg-primary/5 rounded-full blur-3xl animate-pulse" />
@@ -90,13 +71,18 @@ export const Chat = ({
               </div>
             </div>
 
-            <div className="relative">
-              <h2 className="text-xl font-medium text-font">
-                <span className="opacity-50">Ready to</span>{' '}
-                <span className="text-primary">connect</span>
-                <span className="opacity-50">?</span>
+            <div className="relative inset-2 backdrop-blur-sm bg-background-primary/30 px-4 py-2 rounded-lg">
+              <h2 className="text-2xl font-medium text-font space-x-3">
+                <span className="inline-block animate-bounce">Let's</span>
+                <span className="inline-block text-primary relative">
+                  chat
+                  <span className="absolute -top-1 -right-2 text-lg animate-pulse">
+                    ✨
+                  </span>
+                </span>
+                <span className="inline-block">together!</span>
               </h2>
-              <p className="text-sm text-font-subtle mt-2 animate-pulse">
+              <p className="text-sm text-font-subtle opacity-75">
                 Pick a chat or start a new one
               </p>
             </div>
@@ -385,7 +371,7 @@ const MessageInput = () => {
         <input
           type="text"
           placeholder="Write a message..."
-          className="flex-1 bg-elevation text-font py-3 px-4 rounded-lg focus:outline-none"
+          className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-3 px-4 rounded-lg focus:outline-input-border"
           onChange={(e) => {
             const chatId = activeChat.id;
 

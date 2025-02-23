@@ -115,7 +115,9 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
               onBlur={() => setIsSearchFocus(false)}
               className={cx(
                 'w-full rounded-full py-2 px-4 text-font placeholder-font-subtle focus:outline-none focus:ring-2 focus:ring-primary',
-                isSearchFocus ? 'bg-transparent' : 'bg-elevation'
+                isSearchFocus
+                  ? 'bg-transparent'
+                  : 'bg-input-background hover:bg-input-background-hover active:bg-input-background-active'
               )}
             />
             <button
@@ -201,10 +203,7 @@ const ChatList = ({ onChatSelect }: { onChatSelect?: () => void }) => {
         if (!partner) return null;
 
         const contact = contacts[partner.id];
-        console.log('CONTACT', contact);
-
         const status = contact?.onlineStatus;
-        console.log('STATUS', status);
         const isOnline = status === 'ONLINE';
 
         return (
@@ -217,7 +216,7 @@ const ChatList = ({ onChatSelect }: { onChatSelect?: () => void }) => {
             className={`p-4 flex items-center space-x-3 cursor-pointer ${
               activeChat?.id === chat.id
                 ? 'bg-primary text-font-primary-contrast'
-                : 'text-font hover:bg-elevation'
+                : 'text-font hover:bg-elevation-hover'
             }`}
           >
             <div className="relative">
