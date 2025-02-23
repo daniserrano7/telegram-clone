@@ -15,6 +15,7 @@ export default {
         },
         background: {
           primary: 'var(--color-background-primary)',
+          secondary: 'var(--color-background-secondary)',
           hover: 'var(--color-background-primary-hover)',
           active: 'var(--color-background-primary-active)',
         },
@@ -25,11 +26,15 @@ export default {
             DEFAULT: 'var(--color-font-primary)',
             contrast: 'var(--color-font-primary-contrast)',
           },
+          secondary: {
+            DEFAULT: 'var(--color-font-secondary)',
+          },
           subtle: 'var(--color-font-subtle)',
           error: 'var(--color-font-error)',
         },
         icon: {
           DEFAULT: 'var(--color-icon)',
+          secondary: 'var(--color-icon-secondary)',
           subtle: 'var(--color-icon-subtle)',
           success: 'var(--color-icon-success)',
           error: 'var(--color-icon-error)',

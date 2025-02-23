@@ -8,6 +8,7 @@ import {
   HiOutlineChevronUp,
   HiOutlineChevronDown,
 } from 'react-icons/hi2';
+import { BiCheck, BiCheckDouble } from 'react-icons/bi';
 import { useUserStore } from 'src/stores/user.store';
 import { useAuthStore } from 'src/stores/auth.store';
 import { useChatStore } from 'src/stores/chat.store';
@@ -134,19 +135,17 @@ interface ChatHeaderProps {
 const MessageStatus = ({ status }: { status: MessageStatus }) => {
   switch (status) {
     case 'SENT':
-      return <HiOutlineCheck className="w-4 h-4 text-icon-subtle" />;
+      return <BiCheck className="w-5 h-5 text-icon-secondary" />;
     case 'DELIVERED':
       return (
         <div className="flex">
-          <HiOutlineCheck className="w-4 h-4 text-icon-subtle" />
-          <HiOutlineCheck className="w-4 h-4 text-icon-subtle -ml-2" />
+          <BiCheckDouble className="w-5 h-5 text-icon-secondary" />
         </div>
       );
     case 'READ':
       return (
         <div className="flex">
-          <HiOutlineCheck className="w-4 h-4 text-icon-success" />
-          <HiOutlineCheck className="w-4 h-4 text-icon-success -ml-2" />
+          <BiCheckDouble className="w-5 h-5 text-icon-info" />
         </div>
       );
     default:
@@ -230,14 +229,17 @@ const Message = ({
   return (
     <div
       ref={messageRef}
-      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+      className={cx(
+        'flex',
+        isOwn ? 'justify-end lg:justify-start' : 'justify-start'
+      )}
     >
       <div
         className={`max-w-[500px] group relative ${
-          isOwn ? 'bg-primary' : 'bg-elevation'
-        } rounded-lg px-4 py-2 ${isCurrentMatch ? 'ring-2 ring-primary' : ''}`}
+          isOwn ? 'bg-background-secondary' : 'bg-elevation'
+        } rounded-xl px-4 py-2 ${isCurrentMatch ? 'ring-2 ring-primary' : ''}`}
       >
-        <p className={isOwn ? 'text-font-primary-contrast' : 'text-font'}>
+        <p className="text-font">
           {highlight && searchQuery
             ? highlightText(message.content, searchQuery)
             : message.content}
@@ -245,7 +247,7 @@ const Message = ({
         <div className="flex items-center justify-end space-x-1 mt-1">
           <span
             className={`text-xs ${
-              isOwn ? 'text-font-primary-contrast' : 'text-font-subtle'
+              isOwn ? 'text-font-secondary' : 'text-font-subtle'
             }`}
           >
             {new Date(message.createdAt).toLocaleTimeString(undefined, {
