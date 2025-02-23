@@ -1,6 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import {
-  HiOutlineCheck,
   HiOutlinePaperAirplane,
   HiOutlineMagnifyingGlass,
   HiOutlineViewColumns,
@@ -122,274 +121,6 @@ export const Chat = ({
       <div className="flex-shrink-0 relative z-10">
         <MessageInput />
       </div>
-    </div>
-  );
-};
-
-interface ChatHeaderProps {
-  toggleChatInfo: () => void;
-  onBackClick?: () => void;
-  showBackButton?: boolean;
-}
-
-const MessageStatus = ({ status }: { status: MessageStatus }) => {
-  switch (status) {
-    case 'SENT':
-      return <BiCheck className="w-5 h-5 text-icon-secondary" />;
-    case 'DELIVERED':
-      return (
-        <div className="flex">
-          <BiCheckDouble className="w-5 h-5 text-icon-secondary" />
-        </div>
-      );
-    case 'READ':
-      return (
-        <div className="flex">
-          <BiCheckDouble className="w-5 h-5 text-icon-info" />
-        </div>
-      );
-    default:
-      return null;
-  }
-};
-
-const Message = ({
-  message,
-  isOwn,
-  highlight = false,
-  searchQuery = '',
-  isCurrentMatch = false,
-}: {
-  message: Message;
-  isOwn: boolean;
-  highlight?: boolean;
-  searchQuery?: string;
-  isCurrentMatch?: boolean;
-}) => {
-  const messageRef = useRef<HTMLDivElement>(null);
-  const socket = useChatStore((state) => state.socket);
-  const wasReadRef = useRef(false);
-
-  useEffect(() => {
-    if (isCurrentMatch && messageRef.current) {
-      messageRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    }
-  }, [isCurrentMatch]);
-
-  const handleMessageVisible = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      const [entry] = entries;
-      if (
-        entry.isIntersecting &&
-        !isOwn &&
-        message.status !== 'READ' &&
-        !wasReadRef.current &&
-        socket
-      ) {
-        wasReadRef.current = true;
-        socket.emit(Events.MESSAGE_READ, { messageId: message.id });
-      }
-    },
-    [message.id, isOwn, message.status, socket]
-  );
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(handleMessageVisible, {
-      threshold: 0.5,
-      rootMargin: '0px',
-    });
-
-    if (messageRef.current) {
-      observer.observe(messageRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [handleMessageVisible]);
-
-  const highlightText = (text: string, query: string) => {
-    if (!query) return text;
-
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
-    return parts.map((part, i) =>
-      part.toLowerCase() === query.toLowerCase() ? (
-        <span key={i} className="bg-yellow-200 text-black rounded px-0.5">
-          {part}
-        </span>
-      ) : (
-        part
-      )
-    );
-  };
-
-  return (
-    <div
-      ref={messageRef}
-      className={cx(
-        'flex',
-        isOwn ? 'justify-end lg:justify-start' : 'justify-start'
-      )}
-    >
-      <div
-        className={`max-w-[500px] group relative ${
-          isOwn ? 'bg-background-secondary' : 'bg-elevation'
-        } rounded-xl px-4 py-2 ${isCurrentMatch ? 'ring-2 ring-primary' : ''}`}
-      >
-        <p className="text-font">
-          {highlight && searchQuery
-            ? highlightText(message.content, searchQuery)
-            : message.content}
-        </p>
-        <div className="flex items-center justify-end space-x-1 mt-1">
-          <span
-            className={`text-xs ${
-              isOwn ? 'text-font-secondary' : 'text-font-subtle'
-            }`}
-          >
-            {new Date(message.createdAt).toLocaleTimeString(undefined, {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </span>
-          {isOwn && <MessageStatus status={message.status} />}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const MessageList = () => {
-  const userId = useAuthStore((state) => state.user?.id);
-  const activeChat = useChatStore((state) => state.activeChat);
-  const listRef = useRef<HTMLDivElement>(null);
-  const { searchQuery, currentMatchIndex, totalMatches, setTotalMatches } =
-    useSearchStore();
-
-  useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
-    }
-  }, [activeChat?.messages]);
-
-  useEffect(() => {
-    if (!searchQuery.trim() || !activeChat?.messages) {
-      setTotalMatches(0);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const matches = activeChat.messages.filter((message) =>
-      message.content.toLowerCase().includes(query)
-    ).length;
-
-    setTotalMatches(matches);
-  }, [searchQuery, activeChat?.messages, setTotalMatches]);
-
-  if (!activeChat) return null;
-
-  return (
-    <div
-      ref={listRef}
-      className="h-full overflow-y-auto p-4 bg-background-primary"
-    >
-      <div className="space-y-2">
-        {activeChat.messages.map((message, index) => {
-          const matches = Boolean(
-            searchQuery &&
-              message.content.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-          const matchIndex = matches
-            ? activeChat.messages
-                .slice(0, index)
-                .filter((m) =>
-                  m.content.toLowerCase().includes(searchQuery.toLowerCase())
-                ).length
-            : -1;
-
-          return (
-            <Message
-              key={message.id}
-              message={message}
-              isOwn={message.senderId === userId}
-              highlight={matches}
-              searchQuery={searchQuery}
-              isCurrentMatch={matchIndex === currentMatchIndex}
-            />
-          );
-        })}
-      </div>
-      {searchQuery && totalMatches === 0 && (
-        <div className="flex justify-center items-center h-20">
-          <p className="text-font-subtle">No messages found</p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const MessageInput = () => {
-  const activeChat = useChatStore((state) => state.activeChat);
-  const sendMessage = useChatStore((state) => state.sendMessage);
-  const createChat = useChatStore((state) => state.createChat);
-  const emitTypingStatus = useUserStore((state) => state.emitTypingStatus);
-
-  if (!activeChat) return null;
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const input = e.currentTarget.querySelector('input');
-    if (!input) return;
-
-    const content = input.value;
-    if (!content) return;
-
-    const chatId = activeChat.id;
-    if (!chatId) {
-      await createChat({
-        userIds: activeChat.members.map((member) => member.id),
-        content,
-      });
-      input.value = '';
-      return;
-    }
-
-    try {
-      sendMessage(chatId, content);
-    } catch (error) {
-      console.error('Failed to send message', error);
-    }
-
-    input.value = '';
-    emitTypingStatus(chatId, false);
-  };
-
-  return (
-    <div className="p-4 bg-background-primary border-t border-border">
-      <form className="flex items-center space-x-4" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Write a message..."
-          className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-3 px-4 rounded-lg focus:outline-input-border"
-          onChange={(e) => {
-            const chatId = activeChat.id;
-
-            if (!chatId) return;
-
-            const isTyping = e.currentTarget.value.trim().length > 0;
-            emitTypingStatus(chatId, isTyping);
-          }}
-        />
-        <button
-          type="submit"
-          className="p-3 bg-primary hover:bg-primary/80 rounded-full transition-colors"
-        >
-          <HiOutlinePaperAirplane className="w-5 h-5 text-font" />
-        </button>
-      </form>
     </div>
   );
 };
@@ -540,6 +271,341 @@ const ChatHeader = ({
         viewUser={partner}
       />
     </>
+  );
+};
+
+interface ChatHeaderProps {
+  toggleChatInfo: () => void;
+  onBackClick?: () => void;
+  showBackButton?: boolean;
+}
+
+const MessageList = () => {
+  const userId = useAuthStore((state) => state.user?.id);
+  const activeChat = useChatStore((state) => state.activeChat);
+  const listRef = useRef<HTMLDivElement>(null);
+  const { searchQuery, currentMatchIndex, totalMatches, setTotalMatches } =
+    useSearchStore();
+
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [activeChat?.messages]);
+
+  useEffect(() => {
+    if (!searchQuery.trim() || !activeChat?.messages) {
+      setTotalMatches(0);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const matches = activeChat.messages.filter((message) =>
+      message.content.toLowerCase().includes(query)
+    ).length;
+
+    setTotalMatches(matches);
+  }, [searchQuery, activeChat?.messages, setTotalMatches]);
+
+  if (!activeChat) return null;
+
+  const getMessageSender = (message: Message) => {
+    return activeChat.members.find((member) => member.id === message.senderId);
+  };
+
+  const getMessagePosition = (
+    index: number,
+    message: Message
+  ): 'single' | 'first' | 'middle' | 'last' => {
+    const prevMessage = index > 0 ? activeChat.messages[index - 1] : null;
+    const nextMessage =
+      index < activeChat.messages.length - 1
+        ? activeChat.messages[index + 1]
+        : null;
+
+    const isPrevSameSender = prevMessage?.senderId === message.senderId;
+    const isNextSameSender = nextMessage?.senderId === message.senderId;
+
+    if (!isPrevSameSender && !isNextSameSender) return 'single';
+    if (!isPrevSameSender && isNextSameSender) return 'first';
+    if (isPrevSameSender && isNextSameSender) return 'middle';
+    return 'last';
+  };
+
+  return (
+    <div ref={listRef} className="h-full overflow-y-auto p-4 bg-red-400">
+      <div>
+        {activeChat.messages.map((message, index) => {
+          const isOwn = message.senderId === userId;
+          const matches = Boolean(
+            searchQuery &&
+              message.content.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+          const matchIndex = matches
+            ? activeChat.messages
+                .slice(0, index)
+                .filter((m) =>
+                  m.content.toLowerCase().includes(searchQuery.toLowerCase())
+                ).length
+            : -1;
+
+          const sender = getMessageSender(message);
+          const position = getMessagePosition(index, message);
+
+          return (
+            <Message
+              key={message.id}
+              message={message}
+              isOwn={isOwn}
+              highlight={matches}
+              searchQuery={searchQuery}
+              isCurrentMatch={matchIndex === currentMatchIndex}
+              user={sender}
+              position={position}
+            />
+          );
+        })}
+      </div>
+      {searchQuery && totalMatches === 0 && (
+        <div className="flex justify-center items-center h-20">
+          <p className="text-font-subtle">No messages found</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Message = ({
+  message,
+  isOwn,
+  highlight = false,
+  searchQuery = '',
+  isCurrentMatch = false,
+  user,
+  position,
+}: {
+  message: Message;
+  isOwn: boolean;
+  highlight?: boolean;
+  searchQuery?: string;
+  isCurrentMatch?: boolean;
+  user?: { username: string; avatarUrl?: string };
+  position: 'single' | 'first' | 'middle' | 'last';
+}) => {
+  const messageRef = useRef<HTMLDivElement>(null);
+  const socket = useChatStore((state) => state.socket);
+  const wasReadRef = useRef(false);
+
+  useEffect(() => {
+    if (isCurrentMatch && messageRef.current) {
+      messageRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [isCurrentMatch]);
+
+  const handleMessageVisible = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (
+        entry.isIntersecting &&
+        !isOwn &&
+        message.status !== 'READ' &&
+        !wasReadRef.current &&
+        socket
+      ) {
+        wasReadRef.current = true;
+        socket.emit(Events.MESSAGE_READ, { messageId: message.id });
+      }
+    },
+    [message.id, isOwn, message.status, socket]
+  );
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(handleMessageVisible, {
+      threshold: 0.5,
+      rootMargin: '0px',
+    });
+
+    if (messageRef.current) {
+      observer.observe(messageRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [handleMessageVisible]);
+
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text;
+
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <span key={i} className="bg-yellow-200 text-black rounded px-0.5">
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
+  };
+
+  console.log('Position is last', position === 'last');
+
+  return (
+    <div
+      ref={messageRef}
+      className={cx(
+        'flex items-end gap-2 mt-1',
+        isOwn ? 'justify-end lg:justify-start' : 'justify-start',
+        position === 'last' ? 'mb-4' : ''
+      )}
+    >
+      {/* Avatar - only visible on lg screens */}
+      {(position === 'last' || position === 'single') && user ? (
+        <div className="hidden lg:block flex-shrink-0">
+          <Avatar username={user.username} src={user.avatarUrl} size={32} />
+        </div>
+      ) : null}
+
+      {/* Message content */}
+      <div
+        className={cx(
+          'max-w-[500px] group relative px-3 py-1',
+          // Base styles
+          isOwn ? 'bg-background-secondary' : 'bg-elevation',
+          // Border radius based on position and ownership
+          isOwn &&
+            position === 'single' &&
+            'rounded-2xl rounded-br-none lg:rounded-2xl lg:rounded-bl-none',
+          isOwn &&
+            position === 'first' &&
+            'rounded-2xl rounded-br-md lg:rounded-2xl lg:rounded-bl-md',
+          isOwn &&
+            position === 'middle' &&
+            'rounded-2xl rounded-r-md lg:rounded-2xl lg:rounded-l-md',
+          isOwn &&
+            position === 'last' &&
+            'rounded-2xl rounded-tr-md rounded-br-none lg:rounded-2xl lg:rounded-bl-none lg:rounded-tl-md',
+          !isOwn && position === 'single' && 'rounded-2xl rounded-bl-none',
+          !isOwn && position === 'first' && 'rounded-2xl rounded-bl-md',
+          !isOwn && position === 'middle' && 'rounded-r-2xl rounded-l-md',
+          !isOwn &&
+            position === 'last' &&
+            'rounded-2xl rounded-tl-md rounded-bl-none',
+          // Spacing
+          position === 'last' || position === 'single' ? '' : 'lg:ml-10',
+          // Highlight
+          isCurrentMatch && 'ring-2 ring-primary'
+        )}
+      >
+        <p className="text-font">
+          {highlight && searchQuery
+            ? highlightText(message.content, searchQuery)
+            : message.content}
+        </p>
+        <div className="flex items-center justify-end space-x-1 mt-1">
+          <span
+            className={cx(
+              'text-xs',
+              isOwn ? 'text-font-secondary' : 'text-font-subtle'
+            )}
+          >
+            {new Date(message.createdAt).toLocaleTimeString(undefined, {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+          {isOwn && <MessageStatus status={message.status} />}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MessageStatus = ({ status }: { status: MessageStatus }) => {
+  switch (status) {
+    case 'SENT':
+      return <BiCheck className="w-5 h-5 text-icon-secondary" />;
+    case 'DELIVERED':
+      return (
+        <div className="flex">
+          <BiCheckDouble className="w-5 h-5 text-icon-secondary" />
+        </div>
+      );
+    case 'READ':
+      return (
+        <div className="flex">
+          <BiCheckDouble className="w-5 h-5 text-icon-info" />
+        </div>
+      );
+    default:
+      return null;
+  }
+};
+
+const MessageInput = () => {
+  const activeChat = useChatStore((state) => state.activeChat);
+  const sendMessage = useChatStore((state) => state.sendMessage);
+  const createChat = useChatStore((state) => state.createChat);
+  const emitTypingStatus = useUserStore((state) => state.emitTypingStatus);
+
+  if (!activeChat) return null;
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const input = e.currentTarget.querySelector('input');
+    if (!input) return;
+
+    const content = input.value;
+    if (!content) return;
+
+    const chatId = activeChat.id;
+    if (!chatId) {
+      await createChat({
+        userIds: activeChat.members.map((member) => member.id),
+        content,
+      });
+      input.value = '';
+      return;
+    }
+
+    try {
+      sendMessage(chatId, content);
+    } catch (error) {
+      console.error('Failed to send message', error);
+    }
+
+    input.value = '';
+    emitTypingStatus(chatId, false);
+  };
+
+  return (
+    <div className="p-4 bg-background-primary border-t border-border">
+      <form className="flex items-center space-x-4" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Write a message..."
+          className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-3 px-4 rounded-lg focus:outline-input-border"
+          onChange={(e) => {
+            const chatId = activeChat.id;
+
+            if (!chatId) return;
+
+            const isTyping = e.currentTarget.value.trim().length > 0;
+            emitTypingStatus(chatId, isTyping);
+          }}
+        />
+        <button
+          type="submit"
+          className="p-3 bg-primary hover:bg-primary/80 rounded-full transition-colors"
+        >
+          <HiOutlinePaperAirplane className="w-5 h-5 text-font" />
+        </button>
+      </form>
+    </div>
   );
 };
 

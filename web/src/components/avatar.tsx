@@ -3,7 +3,6 @@ import { useState } from 'react';
 export const Avatar = ({ username, src, size = 48 }: AvatarProps) => {
   const [imageError, setImageError] = useState(false);
   const fullPath = `${import.meta.env.VITE_API_URL}${src}`;
-  console.log(fullPath);
 
   const getColorByUsername = (username: string) => {
     // Generate a hash from the username
