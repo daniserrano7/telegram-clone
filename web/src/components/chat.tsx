@@ -1,6 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import {
-  HiOutlinePaperAirplane,
   HiOutlineMagnifyingGlass,
   HiOutlineViewColumns,
   HiOutlineChevronLeft,
@@ -19,6 +18,7 @@ import { Avatar } from './avatar';
 import { useSearchStore } from 'src/stores/search.store';
 import { formatLastActive } from 'src/utils/date';
 import cx from 'classix';
+import { IoSendSharp } from 'react-icons/io5';
 
 export const Chat = ({
   toggleChatInfo,
@@ -29,7 +29,7 @@ export const Chat = ({
 
   if (!activeChat) {
     return (
-      <div className="flex-1 flex flex-col h-full bg-background-primary relative overflow-hidden">
+      <div className="flex-1 flex flex-col h-full bg-[#dfe8d4] relative overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Subtle dot pattern */}
@@ -115,7 +115,7 @@ export const Chat = ({
           showBackButton={showBackButton}
         />
       </div>
-      <div className="flex-1 overflow-hidden relative z-10">
+      <div className="flex-1 overflow-hidden relative z-10 bg-[#dfe8d4]">
         <MessageList />
       </div>
       <div className="flex-shrink-0 relative z-10">
@@ -333,7 +333,22 @@ const MessageList = () => {
   };
 
   return (
-    <div ref={listRef} className="h-full overflow-y-auto p-4 bg-red-400">
+    <div ref={listRef} className="h-full overflow-y-auto p-4 z-10">
+      {/* Date divider */}
+      {activeChat.messages.length > 0 && (
+        <div className="flex justify-center my-3">
+          <div className="bg-[#00000015] text-[#4e774e] text-xs px-3 py-1 rounded-lg">
+            {new Date(activeChat.messages[0].createdAt).toLocaleDateString(
+              undefined,
+              {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              }
+            )}
+          </div>
+        </div>
+      )}
       <div>
         {activeChat.messages.map((message, index) => {
           const isOwn = message.senderId === userId;
@@ -452,15 +467,13 @@ const Message = ({
     );
   };
 
-  console.log('Position is last', position === 'last');
-
   return (
     <div
       ref={messageRef}
       className={cx(
         'flex items-end gap-2 mt-1',
         isOwn ? 'justify-end lg:justify-start' : 'justify-start',
-        position === 'last' ? 'mb-4' : ''
+        position === 'last' || position === 'single' ? 'mb-4' : ''
       )}
     >
       {/* Avatar - only visible on lg screens */}
@@ -473,7 +486,7 @@ const Message = ({
       {/* Message content */}
       <div
         className={cx(
-          'max-w-[500px] group relative px-3 py-1',
+          'max-w-[500px] group relative px-3 py-1 shadow-[0px_1px_2px_rgba(0,0,0,0.13)]',
           // Base styles
           isOwn ? 'bg-background-secondary' : 'bg-elevation',
           // Border radius based on position and ownership
@@ -602,7 +615,7 @@ const MessageInput = () => {
           type="submit"
           className="p-3 bg-primary hover:bg-primary/80 rounded-full transition-colors"
         >
-          <HiOutlinePaperAirplane className="w-5 h-5 text-font" />
+          <IoSendSharp className="w-5 h-5 text-font-primary-contrast" />
         </button>
       </form>
     </div>
