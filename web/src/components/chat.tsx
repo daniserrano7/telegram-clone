@@ -6,6 +6,8 @@ import {
   HiOutlineChevronUp,
   HiOutlineChevronDown,
 } from 'react-icons/hi2';
+import cx from 'classix';
+import { IoSendSharp } from 'react-icons/io5';
 import { BiCheck, BiCheckDouble } from 'react-icons/bi';
 import { useUserStore } from 'src/stores/user.store';
 import { useAuthStore } from 'src/stores/auth.store';
@@ -17,8 +19,6 @@ import { ProfileDialog } from './profile-dialog';
 import { Avatar } from './avatar';
 import { useSearchStore } from 'src/stores/search.store';
 import { formatLastActive } from 'src/utils/date';
-import cx from 'classix';
-import { IoSendSharp } from 'react-icons/io5';
 
 export const Chat = ({
   toggleChatInfo,
@@ -96,7 +96,7 @@ export const Chat = ({
     <div className="flex-1 flex flex-col h-full bg-background-primary relative">
       {/* Background patterns */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 bg-red-200"
         style={{
           backgroundImage: `
             radial-gradient(circle at 1px 1px, var(--color-font) 0.5px, transparent 0),
@@ -116,6 +116,22 @@ export const Chat = ({
         />
       </div>
       <div className="flex-1 overflow-hidden relative z-10 bg-[#dfe8d4]">
+        <div
+          className="absolute w-full h-full top-0 left-0 pointer-events-none"
+          style={{
+            backgroundImage: `
+            radial-gradient(circle at 0 0, rgba(226, 232, 104, 0.8) 10%, transparent 45%),
+              radial-gradient(circle at 100% 100%, rgba(238, 240, 189, 0.8) 10%, transparent 45%)
+            `,
+            backgroundColor: '#87b489',
+          }}
+        />
+        <canvas
+          className="absolute w-full h-full top-0 opacity-20 left-0 pointer-events-none"
+          style={{
+            backgroundImage: `url('/pattern.svg')`,
+          }}
+        />
         <MessageList />
       </div>
       <div className="flex-shrink-0 relative z-10">
@@ -334,21 +350,6 @@ const MessageList = () => {
 
   return (
     <div ref={listRef} className="h-full overflow-y-auto p-4 z-10">
-      {/* Date divider */}
-      {activeChat.messages.length > 0 && (
-        <div className="flex justify-center my-3">
-          <div className="bg-[#00000015] text-[#4e774e] text-xs px-3 py-1 rounded-lg">
-            {new Date(activeChat.messages[0].createdAt).toLocaleDateString(
-              undefined,
-              {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              }
-            )}
-          </div>
-        </div>
-      )}
       <div>
         {activeChat.messages.map((message, index) => {
           const isOwn = message.senderId === userId;
@@ -368,16 +369,38 @@ const MessageList = () => {
           const position = getMessagePosition(index, message);
 
           return (
-            <Message
-              key={message.id}
-              message={message}
-              isOwn={isOwn}
-              highlight={matches}
-              searchQuery={searchQuery}
-              isCurrentMatch={matchIndex === currentMatchIndex}
-              user={sender}
-              position={position}
-            />
+            <div>
+              {/* Date divider */}
+              <div
+                className={cx(
+                  'flex justify-center my-3 z-30',
+                  index === 0 ||
+                    new Date(
+                      activeChat.messages[index - 1].createdAt
+                    ).getDate() !== new Date(message.createdAt).getDate()
+                    ? 'block'
+                    : 'hidden'
+                )}
+              >
+                <div className="bg-[#00000015] text-[#4e774e] text-xs px-3 py-1 rounded-lg">
+                  {new Date(message.createdAt).toLocaleDateString(undefined, {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </div>
+              </div>
+              <Message
+                key={message.id}
+                message={message}
+                isOwn={isOwn}
+                highlight={matches}
+                searchQuery={searchQuery}
+                isCurrentMatch={matchIndex === currentMatchIndex}
+                user={sender}
+                position={position}
+              />
+            </div>
           );
         })}
       </div>
@@ -492,16 +515,16 @@ const Message = ({
           // Border radius based on position and ownership
           isOwn &&
             position === 'single' &&
-            'rounded-2xl rounded-br-none lg:rounded-2xl lg:rounded-bl-none',
+            'rounded-2xl rounded-br-none lg:rounded-[20px] lg:rounded-bl-none',
           isOwn &&
             position === 'first' &&
-            'rounded-2xl rounded-br-md lg:rounded-2xl lg:rounded-bl-md',
+            'rounded-2xl rounded-br-md lg:rounded-[20px] lg:rounded-bl-md',
           isOwn &&
             position === 'middle' &&
-            'rounded-2xl rounded-r-md lg:rounded-2xl lg:rounded-l-md',
+            'rounded-2xl rounded-r-md lg:rounded-[20px] lg:rounded-l-md',
           isOwn &&
             position === 'last' &&
-            'rounded-2xl rounded-tr-md rounded-br-none lg:rounded-2xl lg:rounded-bl-none lg:rounded-tl-md',
+            'rounded-2xl rounded-tr-md rounded-br-none lg:rounded-[20px] lg:rounded-bl-none lg:rounded-tl-md',
           !isOwn && position === 'single' && 'rounded-2xl rounded-bl-none',
           !isOwn && position === 'first' && 'rounded-2xl rounded-bl-md',
           !isOwn && position === 'middle' && 'rounded-r-2xl rounded-l-md',
@@ -514,21 +537,32 @@ const Message = ({
           isCurrentMatch && 'ring-2 ring-primary'
         )}
       >
+        {/* Sender name for non-own first messages */}
+        {/* {!isOwn && (position === 'first' || position === 'single') && user && (
+          <div className="text-[#4fae4e] text-sm font-medium mb-1">
+            {user.username}
+          </div>
+        )} */}
+
         <p className="text-font">
           {highlight && searchQuery
             ? highlightText(message.content, searchQuery)
             : message.content}
         </p>
-        <div className="flex items-center justify-end space-x-1 mt-1">
+
+        {/* Timestamp and status with Telegram styling */}
+        <div className="flex items-center justify-end gap-1 mt-0.5 ml-4 float-right">
           <span
             className={cx(
-              'text-xs',
-              isOwn ? 'text-font-secondary' : 'text-font-subtle'
+              'text-[11px]',
+              isOwn ? 'text-[#71ab92]' : 'text-[#8d8d8d]'
+              // isOwn ? 'text-font-secondary' : 'text-font-subtle'
             )}
           >
             {new Date(message.createdAt).toLocaleTimeString(undefined, {
               hour: '2-digit',
               minute: '2-digit',
+              hour12: false,
             })}
           </span>
           {isOwn && <MessageStatus status={message.status} />}
@@ -541,11 +575,11 @@ const Message = ({
 const MessageStatus = ({ status }: { status: MessageStatus }) => {
   switch (status) {
     case 'SENT':
-      return <BiCheck className="w-5 h-5 text-icon-secondary" />;
+      return <BiCheck className="w-5 h-5 text-[#71ab92]" />;
     case 'DELIVERED':
       return (
         <div className="flex">
-          <BiCheckDouble className="w-5 h-5 text-icon-secondary" />
+          <BiCheckDouble className="w-5 h-5 text-[#71ab92]" />
         </div>
       );
     case 'READ':
