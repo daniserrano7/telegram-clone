@@ -2,7 +2,44 @@
 
 A modern, feature-rich messaging application inspired by Telegram, built with React and NestJS, using WebSockets for real-time communication.
 
-![Telegram Clone Screenshot](https://via.placeholder.com/800x450?text=Telegram+Clone+Screenshot)
+## 📱 Screenshots
+
+### Chat Interface
+
+<div align="center">
+  <img src="screenshots/chat-desktop-large.png" alt="Chat Desktop View" width="800"/>
+  <p><em>Desktop Chat Interface</em></p>
+</div>
+
+<div align="center">
+  <img src="screenshots/chat-desktop-medium.png" alt="Chat Medium View" width="600"/>
+  <p><em>Medium Screen Chat Interface</em></p>
+</div>
+
+<div align="center">
+  <img src="screenshots/chat-mobile.png" alt="Chat Mobile View" width="300"/>
+  <p><em>Mobile Chat Interface</em></p>
+</div>
+
+### Authentication
+
+<div align="center" style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+  <div style="margin: 10px;">
+    <img src="screenshots/login.png" alt="Login Screen" width="300"/>
+    <p><em>Login Screen</em></p>
+  </div>
+  <div style="margin: 10px;">
+    <img src="screenshots/create-account.png" alt="Create Account Screen" width="300"/>
+    <p><em>Create Account Screen</em></p>
+  </div>
+</div>
+
+### Home Screen
+
+<div align="center">
+  <img src="screenshots/home.png" alt="Home Screen" width="400"/>
+  <p><em>Home Screen</em></p>
+</div>
 
 ## ✨ Features
 
