@@ -47,7 +47,7 @@
   --color-input-background-active: #dcdce1;
   --color-input-border: #dcdce1;
   --color-input-border-hover: #e9e9ec;
-  --color-input-border-active: #dcdce1;
+  --color-input-border-active: #2481cc;
 }
 
 .dark {
@@ -77,7 +77,7 @@
   --color-input-background-active: #364758;
   --color-input-border: #364758;
   --color-input-border-hover: #425367;
-  --color-input-border-active: #4d6177;
+  --color-input-border-active: #2481cc;
 }
 
 #root {
