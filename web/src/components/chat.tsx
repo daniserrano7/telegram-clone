@@ -375,16 +375,16 @@ const MessageList = () => {
               {/* Date divider */}
               <div
                 className={cx(
-                  'flex justify-center my-3 z-30',
+                  'justify-center relative my-3 z-30',
                   index === 0 ||
                     new Date(
                       activeChat.messages[index - 1].createdAt
                     ).getDate() !== new Date(message.createdAt).getDate()
-                    ? 'block'
+                    ? 'flex'
                     : 'hidden'
                 )}
               >
-                <div className="bg-[#00000015] text-[#4e774e] text-xs px-3 py-1 rounded-lg">
+                <div className="bg-[rgba(74,102,72,0.6)] text-font-primary-contrast text-xs px-3 py-1 rounded-full">
                   {new Date(message.createdAt).toLocaleDateString(undefined, {
                     month: 'long',
                     day: 'numeric',
