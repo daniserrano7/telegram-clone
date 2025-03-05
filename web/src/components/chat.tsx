@@ -29,7 +29,7 @@ export const Chat = ({
 
   if (!activeChat) {
     return (
-      <div className="flex-1 flex flex-col h-full bg-[#dfe8d4] relative overflow-hidden">
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Subtle dot pattern */}
@@ -96,7 +96,7 @@ export const Chat = ({
     <div className="flex-1 flex flex-col h-full bg-background-primary relative">
       {/* Background patterns */}
       <div
-        className="absolute inset-0 bg-red-200"
+        className="absolute inset-0"
         style={{
           backgroundImage: `
             radial-gradient(circle at 1px 1px, var(--color-font) 0.5px, transparent 0),
@@ -130,6 +130,8 @@ export const Chat = ({
           className="absolute w-full h-full top-0 opacity-20 left-0 pointer-events-none"
           style={{
             backgroundImage: `url('/pattern.svg')`,
+            opacity: 0.3,
+            willChange: 'transform',
           }}
         />
         <MessageList />
@@ -369,7 +371,7 @@ const MessageList = () => {
           const position = getMessagePosition(index, message);
 
           return (
-            <div>
+            <div key={message.id}>
               {/* Date divider */}
               <div
                 className={cx(
