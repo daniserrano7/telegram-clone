@@ -31,7 +31,7 @@ interface ChatStore {
   setActiveChat: (chat: ActiveChat) => void;
   openChatWithUser: (userId: number) => void;
   getChatPartner: (chat: ActiveChat) => User | undefined;
-  initializeSocket: () => void;
+  initializeSocket: () => Socket;
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -44,11 +44,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       return;
     }
 
-    const socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:5000', {
-      auth: {
-        token: useAuthStore.getState().token,
-      },
-    });
+    const socket = get().initializeSocket();
 
     apiService
       .getContacts(user.id)
@@ -346,28 +342,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     return chat.members.find((member) => member.id !== userId);
   },
   initializeSocket: () => {
-    // const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
-    //   auth: {
-    //     token: localStorage.getItem('token'),
-    //   },
-    // });
-    // // Handle heartbeat
-    // socket.on('heartbeat', () => {
-    //   socket.emit('heartbeat-response');
-    // });
-    // // Handle disconnection
-    // socket.on('disconnect', () => {
-    //   console.log('Disconnected from server');
-    //   // Try to reconnect after a delay
-    //   setTimeout(() => {
-    //     get().initializeSocket();
-    //   }, 5000);
-    // });
-    // // Handle reconnection
-    // socket.on('connect', () => {
-    //   console.log('Connected to server');
-    // });
-    // // ... rest of your socket event handlers ...
-    // set({ socket });
+    const socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:5000', {
+      auth: {
+        token: useAuthStore.getState().token,
+      },
+    });
+
+    return socket;
   },
 }));
