@@ -47,6 +47,14 @@ export class AuthController {
           .json({ error: 'Passwords do not match' });
       }
 
+      // Validate username format
+      if (!this.authService.validateUsername(username)) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          error:
+            'Username must be 3-30 characters long, start with a letter, and can only contain letters, numbers, and underscores',
+        });
+      }
+
       const { user, token } = await this.authService.register({
         username,
         password,

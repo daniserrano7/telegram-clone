@@ -7,6 +7,19 @@ import { DbService } from 'src/db/db.service';
 export class AuthService {
   constructor(private readonly db: DbService) {}
 
+  public validateUsername(username: string): boolean {
+    // Must be 3-30 characters long
+    if (username.length < 3 || username.length > 30) return false;
+
+    // Must start with a letter
+    if (!/^[a-zA-Z]/.test(username)) return false;
+
+    // Can only contain letters, numbers, and underscores
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) return false;
+
+    return true;
+  }
+
   generateToken(userId: number) {
     return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
       expiresIn: '365d',

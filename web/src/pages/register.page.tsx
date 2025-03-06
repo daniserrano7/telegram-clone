@@ -5,21 +5,50 @@ import { useAuthStore } from '../stores/auth.store';
 export const RegisterPage = () => {
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [username, setUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
   const navigate = useNavigate();
   const register = useAuthStore((state) => state.register);
   const isLogged = useAuthStore((state) => state.isLogged);
+
+  const validateUsername = (value: string): boolean => {
+    if (value.length < 3 || value.length > 30) {
+      setUsernameError('Username must be between 3 and 30 characters');
+      return false;
+    }
+
+    if (!/^[a-zA-Z]/.test(value)) {
+      setUsernameError('Username must start with a letter');
+      return false;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+      setUsernameError(
+        'Username can only contain letters, numbers, and underscores'
+      );
+      return false;
+    }
+
+    setUsernameError('');
+    return true;
+  };
+
   if (isLogged) {
     return <Navigate to="/chats" />;
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!validateUsername(username)) {
+      return;
+    }
+
     setIsLoading(true);
     setError('');
-    e.preventDefault();
 
     try {
       const formData = new FormData(e.currentTarget);
-      const username = formData.get('username') as string;
       const password = formData.get('password') as string;
       const confirmPassword = formData.get('confirmPassword') as string;
       await register({ username, password, confirmPassword });
@@ -84,9 +113,20 @@ export const RegisterPage = () => {
                     name="username"
                     type="text"
                     required
-                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-font placeholder-font-subtle/50 transition-shadow"
+                    value={username}
+                    onChange={(e) => {
+                      const value = e.target.value.toLowerCase();
+                      setUsername(value);
+                      validateUsername(value);
+                    }}
+                    className={`w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-font placeholder-font-subtle/50 transition-shadow ${
+                      usernameError ? 'ring-2 ring-red-500' : ''
+                    }`}
                     placeholder="Choose a username"
                   />
+                  {usernameError && (
+                    <p className="text-sm text-red-500 mt-1">{usernameError}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
