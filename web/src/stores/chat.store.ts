@@ -322,11 +322,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       ({
         userId,
         status,
-        lastActive,
+        timestamp,
       }: {
         userId: number;
         status: UserStatus;
-        lastActive: Date;
+        timestamp: string | Date;
       }) => {
         const contacts = useUserStore.getState().contacts;
         useUserStore.setState({
@@ -335,7 +335,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             [userId]: {
               ...contacts[userId],
               onlineStatus: status,
-              lastConnection: new Date(lastActive),
+              lastConnection: timestamp ? new Date(timestamp) : new Date(),
             },
           },
         });
