@@ -217,4 +217,49 @@ export class ChatService {
       data: { status },
     });
   }
+
+  async updateReceivedMessagesStatus(userId: number) {
+    // Find all messages sent to chats where the user is a member
+    // and update their status to DELIVERED if they're currently SENT
+    const messages = await this.db.message.updateMany({
+      where: {
+        chat: {
+          members: {
+            some: {
+              id: userId,
+            },
+          },
+        },
+        senderId: {
+          not: userId, // Only update messages not sent by this user
+        },
+        status: 'SENT', // Only update messages that are still in SENT status
+      },
+      data: {
+        status: 'DELIVERED',
+      },
+    });
+
+    // Get the updated messages to broadcast the status change
+    const updatedMessages = await this.db.message.findMany({
+      where: {
+        chat: {
+          members: {
+            some: {
+              id: userId,
+            },
+          },
+        },
+        senderId: {
+          not: userId,
+        },
+        status: 'DELIVERED',
+      },
+      include: {
+        chat: true,
+      },
+    });
+
+    return updatedMessages;
+  }
 }

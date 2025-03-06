@@ -47,6 +47,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: Socket) {
     try {
       const userId = this.getUserIdFromSocket(client);
+      if (!userId) {
+        client.disconnect();
+        return;
+      }
 
       // Set up heartbeat interval for this client
       const interval = setInterval(() => {
@@ -56,12 +60,28 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Store the interval reference in the socket data
       client.data.heartbeatInterval = interval;
 
+      // Join user's room
       client.join(`user_${userId}`);
+
+      // Handle user connection and online status
       await this.userStatusService.handleUserConnect(userId, client.id);
+
+      // Update status of received messages
+      const updatedMessages =
+        await this.chatService.updateReceivedMessagesStatus(userId);
+
+      // Broadcast status changes for each updated message
+      updatedMessages.forEach((message) => {
+        this.server
+          .to(`chat_${message.chatId}`)
+          .emit(Events.MESSAGE_STATUS_CHANGE, {
+            messageId: message.id,
+            status: 'DELIVERED',
+          });
+      });
     } catch (error) {
       console.error('Connection error:', error);
       client.disconnect();
-      throw new WsException('Invalid token');
     }
   }
 

@@ -46,6 +46,26 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     const socket = get().initializeSocket();
 
+    // Listen for message status changes
+    socket.on(Events.MESSAGE_STATUS_CHANGE, ({ messageId, status }) => {
+      set({
+        chats: get().chats.map((chat) => ({
+          ...chat,
+          messages: chat.messages.map((msg) =>
+            msg.id === messageId ? { ...msg, status } : msg
+          ),
+        })),
+        activeChat: get().activeChat && {
+          ...get().activeChat,
+          id: get().activeChat.id,
+          members: get().activeChat.members,
+          messages: get().activeChat.messages.map((msg) =>
+            msg.id === messageId ? { ...msg, status } : msg
+          ),
+        },
+      });
+    });
+
     apiService
       .getContacts(user.id)
       .then((result) => {
@@ -68,7 +88,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
         const chats = result.data;
         set({ chats });
-        get().chats.forEach((chat) => {
+
+        // Join all chat rooms
+        chats.forEach((chat) => {
           socket.emit(Events.JOIN_CHAT, { chatId: chat.id });
         });
       });
@@ -137,26 +159,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     // Listen for user typing events
     socket.on(Events.USER_TYPING, ({ userId, chatId, isTyping }) => {
       useUserStore.getState().updateTypingStatus(userId, chatId, isTyping);
-    });
-
-    // Add listener for message status changes
-    socket.on(Events.MESSAGE_STATUS_CHANGE, ({ messageId, status }) => {
-      set({
-        chats: get().chats.map((chat) => ({
-          ...chat,
-          messages: chat.messages.map((msg) =>
-            msg.id === messageId ? { ...msg, status } : msg
-          ),
-        })),
-        activeChat: {
-          id: get().activeChat?.id,
-          members: get().activeChat?.members || [],
-          messages:
-            get().activeChat?.messages.map((msg) =>
-              msg.id === messageId ? { ...msg, status } : msg
-            ) || [],
-        },
-      });
     });
 
     // Handle heartbeat
