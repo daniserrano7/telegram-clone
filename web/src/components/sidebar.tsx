@@ -168,7 +168,19 @@ const ChatList = ({ onChatSelect }: { onChatSelect?: () => void }) => {
       : date.toLocaleDateString();
   };
 
-  if (chats.length === 0) {
+  const getLastMessageTime = (chat: (typeof chats)[0]): Date => {
+    const lastMessage = chat.messages[chat.messages.length - 1];
+    return lastMessage ? new Date(lastMessage.createdAt) : new Date(0);
+  };
+
+  // Sort chats by most recent message
+  const sortedChats = [...chats].sort((a, b) => {
+    const timeA = getLastMessageTime(a).getTime();
+    const timeB = getLastMessageTime(b).getTime();
+    return timeB - timeA;
+  });
+
+  if (sortedChats.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
         <div className="w-16 h-16 bg-elevation rounded-full flex items-center justify-center mb-4">
@@ -196,7 +208,7 @@ const ChatList = ({ onChatSelect }: { onChatSelect?: () => void }) => {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {chats.map((chat) => {
+      {sortedChats.map((chat) => {
         const partner = findPartner(chat);
         if (!partner) return null;
 
@@ -248,9 +260,7 @@ const ChatList = ({ onChatSelect }: { onChatSelect?: () => void }) => {
                       : 'text-font-subtle'
                   }`}
                 >
-                  {formatLastMessage(
-                    new Date(chat.messages[chat.messages.length - 1]?.createdAt)
-                  )}
+                  {formatLastMessage(getLastMessageTime(chat))}
                 </span>
               </div>
               <p
