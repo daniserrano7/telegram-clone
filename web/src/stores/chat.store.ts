@@ -31,7 +31,7 @@ interface ChatStore {
   setActiveChat: (chat: ActiveChat) => void;
   openChatWithUser: (userId: number) => void;
   getChatPartner: (chat: ActiveChat) => User | undefined;
-  initializeSocket: () => Socket;
+  initializeSocket: (user: User) => Socket;
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -44,27 +44,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       return;
     }
 
-    const socket = get().initializeSocket();
-
-    // Listen for message status changes
-    socket.on(Events.MESSAGE_STATUS_CHANGE, ({ messageId, status }) => {
-      set({
-        chats: get().chats.map((chat) => ({
-          ...chat,
-          messages: chat.messages.map((msg) =>
-            msg.id === messageId ? { ...msg, status } : msg
-          ),
-        })),
-        activeChat: get().activeChat && {
-          ...get().activeChat,
-          id: get().activeChat.id,
-          members: get().activeChat.members,
-          messages: get().activeChat.messages.map((msg) =>
-            msg.id === messageId ? { ...msg, status } : msg
-          ),
-        },
-      });
-    });
+    const socket = get().initializeSocket(user);
 
     apiService
       .getContacts(user.id)
@@ -94,77 +74,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           socket.emit(Events.JOIN_CHAT, { chatId: chat.id });
         });
       });
-
-    // Listen for new chats
-    socket.on(Events.NEW_CHAT, (chatId) => {
-      get().fetchChat(chatId);
-      socket.emit(Events.JOIN_CHAT, chatId);
-    });
-
-    // Listen for incoming messages
-    socket.on(Events.MESSAGE, (message: Message) => {
-      if (message.senderId === user.id) return;
-
-      // Update chats with new message
-      set({
-        chats: get().chats.map((chat) => {
-          if (chat.id === message.chatId) {
-            return {
-              ...chat,
-              messages: [...chat.messages, message],
-            };
-          }
-          return chat;
-        }),
-        activeChat:
-          get().activeChat?.id === message.chatId
-            ? {
-                id: get().activeChat?.id,
-                members: get().activeChat?.members || [],
-                messages: get().activeChat?.messages.concat(message) || [],
-              }
-            : get().activeChat,
-      });
-
-      // Automatically emit DELIVERED status for received messages
-      socket.emit(Events.MESSAGE_DELIVERED, { messageId: message.id });
-    });
-
-    // Listen for user status changes
-    socket.on(
-      Events.USER_STATUS_CHANGE,
-      ({
-        userId,
-        status,
-        lastActive,
-      }: {
-        userId: number;
-        status: UserStatus;
-        lastActive: Date;
-      }) => {
-        const contacts = useUserStore.getState().contacts;
-        useUserStore.setState({
-          contacts: {
-            ...contacts,
-            [userId]: {
-              ...contacts[userId],
-              onlineStatus: status,
-              lastConnection: new Date(lastActive),
-            },
-          },
-        });
-      }
-    );
-
-    // Listen for user typing events
-    socket.on(Events.USER_TYPING, ({ userId, chatId, isTyping }) => {
-      useUserStore.getState().updateTypingStatus(userId, chatId, isTyping);
-    });
-
-    // Handle heartbeat
-    socket.on('heartbeat', () => {
-      socket.emit('heartbeat-response');
-    });
 
     set({ socket });
   },
@@ -343,11 +252,104 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     const userId = useAuthStore.getState().user?.id;
     return chat.members.find((member) => member.id !== userId);
   },
-  initializeSocket: () => {
+  initializeSocket: (user: User) => {
     const socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:5000', {
       auth: {
         token: useAuthStore.getState().token,
       },
+    });
+
+    // Listen for message status changes
+    socket.on(Events.MESSAGE_STATUS_CHANGE, ({ messageId, status }) => {
+      set({
+        chats: get().chats.map((chat) => ({
+          ...chat,
+          messages: chat.messages.map((msg) =>
+            msg.id === messageId ? { ...msg, status } : msg
+          ),
+        })),
+        activeChat: get().activeChat
+          ? {
+              ...get().activeChat,
+              members: get().activeChat?.members || [],
+              messages:
+                get().activeChat?.messages.map((msg) =>
+                  msg.id === messageId ? { ...msg, status } : msg
+                ) || [],
+            }
+          : null,
+      });
+    });
+
+    // Listen for new chats
+    socket.on(Events.NEW_CHAT, (chatId) => {
+      get().fetchChat(chatId);
+      socket.emit(Events.JOIN_CHAT, chatId);
+    });
+
+    // Listen for incoming messages
+    socket.on(Events.MESSAGE, (message: Message) => {
+      if (message.senderId === user.id) return;
+
+      // Update chats with new message
+      set({
+        chats: get().chats.map((chat) => {
+          if (chat.id === message.chatId) {
+            return {
+              ...chat,
+              messages: [...chat.messages, message],
+            };
+          }
+          return chat;
+        }),
+        activeChat:
+          get().activeChat?.id === message.chatId
+            ? {
+                id: get().activeChat?.id,
+                members: get().activeChat?.members || [],
+                messages: get().activeChat?.messages.concat(message) || [],
+              }
+            : get().activeChat,
+      });
+
+      // Automatically emit DELIVERED status for received messages
+      socket.emit(Events.MESSAGE_DELIVERED, { messageId: message.id });
+    });
+
+    // Listen for user status changes
+    socket.on(
+      Events.USER_STATUS_CHANGE,
+      ({
+        userId,
+        status,
+        lastActive,
+      }: {
+        userId: number;
+        status: UserStatus;
+        lastActive: Date;
+      }) => {
+        const contacts = useUserStore.getState().contacts;
+        useUserStore.setState({
+          contacts: {
+            ...contacts,
+            [userId]: {
+              ...contacts[userId],
+              onlineStatus: status,
+              lastConnection: new Date(lastActive),
+            },
+          },
+        });
+      }
+    );
+
+    // Listen for user typing events
+    socket.on(Events.USER_TYPING, ({ userId, chatId, isTyping }) => {
+      useUserStore.getState().updateTypingStatus(userId, chatId, isTyping);
+    });
+
+    // Handle heartbeat
+    socket.on('heartbeat', () => {
+      socket.emit('heartbeat-response');
     });
 
     return socket;

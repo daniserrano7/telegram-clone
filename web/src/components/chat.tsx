@@ -108,14 +108,14 @@ export const Chat = ({
         }}
       />
 
-      <div className="flex-shrink-0 relative z-10">
+      <div className="flex-shrink-0 relative">
         <ChatHeader
           toggleChatInfo={toggleChatInfo}
           onBackClick={onBackClick}
           showBackButton={showBackButton}
         />
       </div>
-      <div className="flex-1 overflow-hidden relative z-10 bg-[#dfe8d4]">
+      <div className="flex-1 overflow-hidden relative bg-[#dfe8d4]">
         <div
           className="absolute w-full h-full top-0 left-0 pointer-events-none"
           style={{
@@ -136,7 +136,7 @@ export const Chat = ({
         />
         <MessageList />
       </div>
-      <div className="flex-shrink-0 relative z-10">
+      <div className="flex-shrink-0 relative">
         <MessageInput />
       </div>
     </div>
@@ -351,7 +351,7 @@ const MessageList = () => {
   };
 
   return (
-    <div ref={listRef} className="h-full overflow-y-auto p-4 z-10">
+    <div ref={listRef} className="h-full overflow-y-auto p-4">
       <div>
         {activeChat.messages.map((message, index) => {
           const isOwn = message.senderId === userId;
@@ -375,7 +375,7 @@ const MessageList = () => {
               {/* Date divider */}
               <div
                 className={cx(
-                  'justify-center relative my-3 z-30',
+                  'justify-center relative my-3',
                   index === 0 ||
                     new Date(
                       activeChat.messages[index - 1].createdAt

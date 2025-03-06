@@ -159,8 +159,6 @@ const ChatList = ({ onChatSelect }: { onChatSelect?: () => void }) => {
   const findPartner = useChatStore((state) => state.getChatPartner);
   const contacts = useUserStore((state) => state.contacts);
 
-  console.log('CHATS', chats);
-
   const formatLastMessage = (date: Date): string => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

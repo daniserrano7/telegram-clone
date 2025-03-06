@@ -221,7 +221,7 @@ export class ChatService {
   async updateReceivedMessagesStatus(userId: number) {
     // Find all messages sent to chats where the user is a member
     // and update their status to DELIVERED if they're currently SENT
-    const messages = await this.db.message.updateMany({
+    await this.db.message.updateMany({
       where: {
         chat: {
           members: {
