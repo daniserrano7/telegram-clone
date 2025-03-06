@@ -31,6 +31,7 @@ interface ChatStore {
   setActiveChat: (chat: ActiveChat) => void;
   openChatWithUser: (userId: number) => void;
   getChatPartner: (chat: ActiveChat) => User | undefined;
+  initializeSocket: () => void;
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -49,8 +50,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       },
     });
 
-    socket.emit(Events.JOIN_USER, { userId: user.id });
-
     apiService
       .getContacts(user.id)
       .then((result) => {
@@ -60,7 +59,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         }
 
         const contacts = result.data;
-        console.log('CONTACTS', contacts);
         contacts.forEach((contact) => {
           useUserStore.getState().contacts[contact.id] = contact;
         });
@@ -74,7 +72,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
         const chats = result.data;
         set({ chats });
-        // get().setActiveChat(chats[0] || null);
         get().chats.forEach((chat) => {
           socket.emit(Events.JOIN_CHAT, { chatId: chat.id });
         });
@@ -127,7 +124,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         status: UserStatus;
         lastActive: Date;
       }) => {
-        console.log('USER STATUS CHANGE', userId, status, lastActive);
         const contacts = useUserStore.getState().contacts;
         useUserStore.setState({
           contacts: {
@@ -165,6 +161,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             ) || [],
         },
       });
+    });
+
+    // Handle heartbeat
+    socket.on('heartbeat', () => {
+      socket.emit('heartbeat-response');
     });
 
     set({ socket });
@@ -343,5 +344,30 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   getChatPartner: (chat: ActiveChat) => {
     const userId = useAuthStore.getState().user?.id;
     return chat.members.find((member) => member.id !== userId);
+  },
+  initializeSocket: () => {
+    // const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+    //   auth: {
+    //     token: localStorage.getItem('token'),
+    //   },
+    // });
+    // // Handle heartbeat
+    // socket.on('heartbeat', () => {
+    //   socket.emit('heartbeat-response');
+    // });
+    // // Handle disconnection
+    // socket.on('disconnect', () => {
+    //   console.log('Disconnected from server');
+    //   // Try to reconnect after a delay
+    //   setTimeout(() => {
+    //     get().initializeSocket();
+    //   }, 5000);
+    // });
+    // // Handle reconnection
+    // socket.on('connect', () => {
+    //   console.log('Connected to server');
+    // });
+    // // ... rest of your socket event handlers ...
+    // set({ socket });
   },
 }));

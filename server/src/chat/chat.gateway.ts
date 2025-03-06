@@ -1,4 +1,3 @@
-import { UseGuards } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -9,84 +8,110 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
+import { UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { UserService } from 'src/user/user.service';
 import { UserId } from '@shared/user.dto';
 import { WsAuthGuard } from 'src/auth/auth.guard';
-import { Events, type UserStatus } from '@shared/gateway.dto';
+import { Events } from '@shared/gateway.dto';
+import { UserStatusService } from '../user/user-status.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @WebSocketGateway({
   cors: {
-    origin: true,
     methods: ['GET', 'POST'],
     credentials: true,
+    // origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: true,
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  private userStatuses: Map<
-    UserId,
-    {
-      status: UserStatus;
-      lastActive: Date;
-      typingIn: Set<number>; // chatIds where user is typing
-    }
-  > = new Map();
+  private readonly heartbeatInterval = 15000; // 15 seconds
 
   constructor(
     private readonly userService: UserService,
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
+    private readonly userStatusService: UserStatusService,
   ) {}
 
-  async handleConnection(@ConnectedSocket() client: Socket) {
-    // TODO: Fix duplicated implementation
-    const token = client.handshake.auth.token;
+  afterInit() {
+    this.userStatusService.setServer(this.server);
+  }
 
-    if (!token) {
-      throw new WsException('Authentication token missing');
-    }
-
+  async handleConnection(client: Socket) {
     try {
-      const decoded = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET,
-      });
-      const userId = decoded.id;
-      if (userId) {
-        this.updateUserStatus(userId, 'ONLINE');
-      }
+      const userId = this.getUserIdFromSocket(client);
+
+      // Set up heartbeat interval for this client
+      const interval = setInterval(() => {
+        client.emit('heartbeat');
+      }, this.heartbeatInterval);
+
+      // Store the interval reference in the socket data
+      client.data.heartbeatInterval = interval;
+
+      client.join(`user_${userId}`);
+      await this.userStatusService.handleUserConnect(userId, client.id);
     } catch (error) {
-      console.error(error);
+      console.error('Connection error:', error);
+      client.disconnect();
       throw new WsException('Invalid token');
     }
   }
 
-  @UseGuards(WsAuthGuard)
-  handleDisconnect(@ConnectedSocket() client: Socket) {
-    const userId = client.data.userId as UserId;
+  async handleDisconnect(client: Socket) {
+    try {
+      const userId = client.data.userId as UserId;
+      if (!userId) return;
 
-    if (userId) {
-      this.updateUserStatus(userId, 'OFFLINE');
+      // Clear heartbeat interval
+      if (client.data.heartbeatInterval) {
+        clearInterval(client.data.heartbeatInterval);
+      }
+
+      // Handle user disconnection
+      await this.userStatusService.handleUserDisconnect(userId);
+    } catch (error) {
+      console.error('Disconnection error:', error);
     }
   }
 
-  private async updateUserStatus(userId: number, status: UserStatus) {
-    const userContacts = await this.userService.getUserContacts(userId);
+  @SubscribeMessage('heartbeat-response')
+  handleHeartbeat(@ConnectedSocket() client: Socket) {
+    const userId = this.getUserIdFromSocket(client);
+    if (userId) {
+      this.userStatusService.updateHeartbeat(userId);
+    }
+  }
 
-    this.userService.updateUserOnlineStatus(userId, status);
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  handleStaleConnections() {
+    this.userStatusService.checkStaleConnections();
+  }
 
-    // Emit user status change event to all subscribed clients
-    userContacts.forEach((contact) => {
-      this.server.to(`user_${contact.id}`).emit(Events.USER_STATUS_CHANGE, {
-        userId,
-        status,
-        lastActive: new Date(),
+  private getUserIdFromSocket(client: Socket): number {
+    try {
+      const token = client.handshake.auth.token;
+
+      if (!token) {
+        throw new WsException('Authentication token missing');
+      }
+
+      const decoded = this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET,
       });
-    });
+
+      const userId = decoded.id;
+      return userId;
+    } catch {
+      throw new WsException('Invalid token');
+    }
   }
 
   // Start typing
@@ -96,7 +121,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { chatId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = client.data.userId as UserId;
+    const userId = this.getUserIdFromSocket(client);
     const { chatId } = data;
 
     if (!chatId) {
@@ -117,7 +142,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { chatId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = client.data.userId as UserId;
+    const userId = this.getUserIdFromSocket(client);
     const { chatId } = data;
 
     if (!chatId) {
@@ -138,7 +163,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() body: { chatId: number; content: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = client.data.userId as UserId;
+    const userId = this.getUserIdFromSocket(client);
     const { chatId, content } = body;
 
     if (!chatId) {
@@ -181,7 +206,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @UseGuards(WsAuthGuard)
   @SubscribeMessage(Events.JOIN_USER)
   handleJoinUser(@ConnectedSocket() client: Socket) {
-    const userId = client.data.userId as UserId;
+    const userId = this.getUserIdFromSocket(client);
     client.join(`user_${userId}`);
 
     return { message: `Joined user ${userId}` };
@@ -211,7 +236,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { messageId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = client.data.userId as UserId;
+    const userId = this.getUserIdFromSocket(client);
     const { messageId } = data;
 
     try {
@@ -240,7 +265,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { messageId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = client.data.userId as UserId;
+    const userId = this.getUserIdFromSocket(client);
     const { messageId } = data;
 
     try {
