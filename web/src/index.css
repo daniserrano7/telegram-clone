@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+}
+
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -20,6 +48,8 @@
 :root,
 .light {
   --color-primary: #2481cc;
+  --color-primary-light: #64b5f6;
+  --color-primary-dark: #1e1e2d;
   --color-elevation: #f4f4f5;
   --color-elevation-hover: #e9e9ec;
   --color-elevation-active: #dcdce1;
@@ -52,6 +82,8 @@
 
 .dark {
   --color-primary: #2481cc;
+  --color-primary-light: #64b5f6;
+  --color-primary-dark: #1e1e2d;
   --color-elevation: #1e1e2d;
   --color-elevation-hover: #2d3a4a;
   --color-elevation-active: #252534;

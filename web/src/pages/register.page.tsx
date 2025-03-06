@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth.store';
+import { Logo } from 'src/components/logo';
 
 export const RegisterPage = () => {
   const [error, setError] = useState<string>('');
@@ -65,29 +66,15 @@ export const RegisterPage = () => {
   };
 
   return (
-    <main className="w-full h-full bg-background-primary relative overflow-hidden">
-      {/* Background Pattern */}
-      <div
-        className="absolute inset-0 bg-primary/5"
-        style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, var(--color-primary) 1px, transparent 0)`,
-          backgroundSize: '40px 40px',
-        }}
-      />
-
-      {/* Content */}
+    <main className="w-full h-full bg-slate-100 relative overflow-hidden">
       <div className="relative w-full h-full flex flex-col items-center overflow-y-auto py-8">
         <div className="w-full max-w-md px-4">
           {/* Logo/Brand */}
           <div className="text-center mb-6 relative">
-            <div className="w-16 h-16 bg-primary rounded-2xl mx-auto mb-4 relative overflow-hidden shadow-lg">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
-              <div className="absolute inset-0 flex items-center justify-center text-white text-2xl font-bold">
-                T
-              </div>
-            </div>
+            <Logo size="small" />
+
+            {/* Title section with improved backdrop */}
             <div className="relative">
-              <div className="absolute inset-0 bg-background-primary/80 backdrop-blur-md -mx-8 -my-3 rounded-2xl" />
               <h1 className="text-3xl font-bold text-font mb-2 relative">
                 Create Account
               </h1>
@@ -98,7 +85,7 @@ export const RegisterPage = () => {
           </div>
 
           {/* Card */}
-          <div className="bg-elevation-contrast/95 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border/5 backdrop-blur-xl mb-8">
+          <div className="bg-elevation-contrast rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border backdrop-blur-xl mb-8">
             <div className="p-6">
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="space-y-2">

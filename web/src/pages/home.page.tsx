@@ -1,5 +1,6 @@
 import { Link, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth.store';
+import { Logo } from 'src/components/logo';
 
 export const HomePage = () => {
   const isLogged = useAuthStore((state) => state.isLogged);
@@ -9,31 +10,18 @@ export const HomePage = () => {
   }
 
   return (
-    <main className="w-full h-full bg-background-primary relative overflow-hidden">
-      {/* Background Pattern */}
-      <div
-        className="absolute inset-0 bg-primary/5"
-        style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, var(--color-primary) 1px, transparent 0)`,
-          backgroundSize: '40px 40px',
-        }}
-      />
-
+    <main className="w-full h-full relative overflow-hidden bg-slate-100">
       {/* Content */}
       <div className="relative w-full h-full flex flex-col items-center justify-center px-4">
-        <div className="w-full max-w-md">
-          {/* Logo/Brand */}
+        <div className="w-full max-w-md px-4">
           <div className="text-center mb-6 relative">
-            <div className="w-16 h-16 bg-primary rounded-2xl mx-auto mb-4 relative overflow-hidden shadow-lg">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
-              <div className="absolute inset-0 flex items-center justify-center text-white text-2xl font-bold">
-                T
-              </div>
-            </div>
+            {/* Title section with improved backdrop */}
             <div className="relative">
-              <div className="absolute inset-0 bg-background-primary/80 backdrop-blur-md -mx-8 -my-3 rounded-2xl" />
+              <div className="mb-6">
+                <Logo />
+              </div>
               <h1 className="text-3xl font-bold text-font mb-2 relative">
-                Welcome to Telegram Clone
+                Welcome to Telechat
               </h1>
               <p className="text-font-subtle relative">
                 Connect with friends and start chatting
@@ -42,8 +30,8 @@ export const HomePage = () => {
           </div>
 
           {/* Card */}
-          <div className="bg-elevation-contrast/95 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border/5 backdrop-blur-xl">
-            <div className="p-8">
+          <div className="bg-elevation-contrast rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border/5 backdrop-blur-xl">
+            <div className="p-6">
               <div className="flex flex-col gap-4">
                 <Link
                   to="/login"
@@ -59,9 +47,15 @@ export const HomePage = () => {
                 </Link>
               </div>
 
-              <div className="mt-8 pt-6 text-center border-t border-border">
+              <div className="mt-8 pt-4 text-center border-t border-border">
                 <p className="text-font-subtle">
-                  Built with React, NestJS, and PostgreSQL
+                  Built with ❤️ by{' '}
+                  <a
+                    href="https://github.com/daniserrano7"
+                    className="text-font-primary"
+                  >
+                    @daniserrano7
+                  </a>
                 </p>
               </div>
             </div>
