@@ -19,7 +19,7 @@ import { Events } from '@shared/gateway.dto';
 import { UserStatusService } from '../user/user-status.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-@WebSocketGateway({
+@WebSocketGateway(parseInt(process.env.PORT || '5000'), {
   cors: {
     methods: ['GET', 'POST'],
     credentials: true,

@@ -253,7 +253,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     return chat.members.find((member) => member.id !== userId);
   },
   initializeSocket: (user: User) => {
-    const socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:5000', {
+    const socketUrl = import.meta.env.VITE_WS_URL || 'http://localhost:5000';
+    console.log('socketUrl', socketUrl);
+    const socket = io(socketUrl, {
       auth: {
         token: useAuthStore.getState().token,
       },

@@ -60,6 +60,8 @@ export class ApiService {
     username,
     password,
   }: LoginRequestDto): ServiceResponse<LoginResponseDto> {
+    console.log('API_URL', import.meta.env.VITE_API_URL);
+    console.log('NODE_ENV', import.meta.env.VITE_NODE_ENV);
     try {
       const res = await fetch(`${this.BASE_URL}/auth/login`, {
         method: 'POST',
