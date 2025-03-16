@@ -94,7 +94,7 @@ export class ChatController {
       const chats = await this.chatService.getUserChats(userId);
 
       if (!chats.length) {
-        return res.status(HttpStatus.NOT_FOUND).json([]);
+        return res.status(HttpStatus.OK).json([]);
       }
 
       return res.status(HttpStatus.OK).json(chats);

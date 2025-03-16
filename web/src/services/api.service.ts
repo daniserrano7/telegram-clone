@@ -15,8 +15,7 @@ type ServiceResponse<T> = Promise<
 >;
 
 export class ApiService {
-  private readonly BASE_URL =
-    import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  private readonly BASE_URL = import.meta.env.VITE_API_URL;
   private token: string | null = null;
 
   setToken(token: string) {

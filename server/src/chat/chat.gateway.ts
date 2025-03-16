@@ -19,12 +19,11 @@ import { Events } from '@shared/gateway.dto';
 import { UserStatusService } from '../user/user-status.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-@WebSocketGateway(parseInt(process.env.PORT || '5000'), {
+@WebSocketGateway({
   cors: {
     methods: ['GET', 'POST'],
     credentials: true,
-    // origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    origin: true,
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', '0.0.0.0:3000'],
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
