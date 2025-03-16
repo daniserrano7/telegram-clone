@@ -24,6 +24,7 @@ export const ProfileDialog = ({
   const [bio, setBio] = useState(user?.bio || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveBio = async () => {
@@ -70,9 +71,24 @@ export const ProfileDialog = ({
     try {
       const result = await apiService.updateUserAvatar(user.id, file);
       if (result.status === 'success') {
-        useAuthStore.setState({
-          user: { ...user, avatarUrl: result.data.avatarUrl },
-        });
+        const updatedUser = { ...user, avatarUrl: result.data.avatarUrl };
+
+        // Update the local state for immediate UI update
+        setAvatarUrl(result.data.avatarUrl);
+
+        // Update the auth store
+        useAuthStore.setState({ user: updatedUser });
+
+        // Update localStorage to persist the change
+        const token = useAuthStore.getState().token;
+        localStorage.setItem(
+          'user',
+          JSON.stringify({ user: updatedUser, token })
+        );
+
+        // Force a re-render of the avatar by adding a timestamp to the URL
+        const timestamp = new Date().getTime();
+        setAvatarUrl(`${result.data.avatarUrl}?t=${timestamp}`);
       }
     } catch (error) {
       console.error('Failed to upload avatar:', error);
@@ -106,7 +122,12 @@ export const ProfileDialog = ({
 
           <div className="flex flex-col items-center">
             <div className="relative">
-              <Avatar username={user.username} size={96} src={user.avatarUrl} />
+              <Avatar
+                username={user.username}
+                size={96}
+                src={avatarUrl || user.avatarUrl}
+                key={avatarUrl} // Add key to force re-render when avatarUrl changes
+              />
               {isOwnProfile && (
                 <button
                   onClick={handleAvatarClick}
