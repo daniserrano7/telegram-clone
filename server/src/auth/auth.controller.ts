@@ -51,7 +51,7 @@ export class AuthController {
       if (!this.authService.validateUsername(username)) {
         return res.status(HttpStatus.BAD_REQUEST).json({
           error:
-            'Username must be 3-30 characters long, start with a letter, and can only contain letters, numbers, and underscores',
+            'Username must be 3-30 characters long, start with a letter, and can only contain letters, numbers, underscores (_), and dots (.)',
         });
       }
 

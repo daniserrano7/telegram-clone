@@ -23,9 +23,9 @@ export const RegisterPage = () => {
       return false;
     }
 
-    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+    if (!/^[a-zA-Z0-9_.]+$/.test(value)) {
       setUsernameError(
-        'Username can only contain letters, numbers, and underscores'
+        'Username can only contain letters, numbers, underscores (_), and dots (.)'
       );
       return false;
     }
@@ -106,7 +106,7 @@ export const RegisterPage = () => {
                       setUsername(value);
                       validateUsername(value);
                     }}
-                    className={`w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-font placeholder-font-subtle/50 transition-shadow ${
+                    className={`w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-ligth text-font placeholder-font-subtle/50 transition-shadow ${
                       usernameError ? 'ring-2 ring-red-500' : ''
                     }`}
                     placeholder="Choose a username"
@@ -128,7 +128,7 @@ export const RegisterPage = () => {
                     name="password"
                     type="password"
                     required
-                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-font placeholder-font-subtle/50 transition-shadow"
+                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-ligth text-font placeholder-font-subtle/50 transition-shadow"
                     placeholder="Create a password"
                   />
                 </div>
@@ -145,7 +145,7 @@ export const RegisterPage = () => {
                     name="confirmPassword"
                     type="password"
                     required
-                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-font placeholder-font-subtle/50 transition-shadow"
+                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-ligth text-font placeholder-font-subtle/50 transition-shadow"
                     placeholder="Confirm your password"
                   />
                   {error && (

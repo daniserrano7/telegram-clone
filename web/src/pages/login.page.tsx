@@ -69,7 +69,7 @@ export const LoginPage = () => {
                     type="text"
                     name="username"
                     required
-                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-font placeholder-font-subtle/50 transition-shadow"
+                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-light text-font placeholder-font-subtle/50 transition-shadow"
                     placeholder="Enter your username"
                   />
                 </div>
@@ -86,7 +86,7 @@ export const LoginPage = () => {
                     type="password"
                     name="password"
                     required
-                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 text-font placeholder-font-subtle/50 transition-shadow"
+                    className="w-full bg-elevation py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-light text-font placeholder-font-subtle/50 transition-shadow"
                     placeholder="Enter your password"
                   />
                   {error && (
@@ -98,7 +98,7 @@ export const LoginPage = () => {
 
                 <button
                   type="submit"
-                  className="text-font-primary-contrast bg-primary py-3 px-4 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30"
+                  className="text-font-primary-contrast bg-primary py-3 px-4 rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30"
                   disabled={isLoading}
                 >
                   {isLoading ? (

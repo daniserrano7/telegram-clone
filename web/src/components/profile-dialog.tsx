@@ -208,8 +208,8 @@ export const ProfileDialog = ({
                         className={cx(
                           'px-3 py-1 text-sm text-white rounded-lg transition-colors',
                           isSaving || bio === user.bio
-                            ? 'bg-primary/50 cursor-not-allowed'
-                            : 'bg-primary hover:bg-primary/90'
+                            ? 'bg-primary-light cursor-not-allowed'
+                            : 'bg-primary hover:bg-primary-dark'
                         )}
                       >
                         {isSaving ? 'Saving...' : 'Save'}

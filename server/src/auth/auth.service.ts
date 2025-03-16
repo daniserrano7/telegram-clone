@@ -14,8 +14,8 @@ export class AuthService {
     // Must start with a letter
     if (!/^[a-zA-Z]/.test(username)) return false;
 
-    // Can only contain letters, numbers, and underscores
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) return false;
+    // Can only contain letters, numbers, underscores (_), and dots (.)
+    if (!/^[a-zA-Z0-9_.]+$/.test(username)) return false;
 
     return true;
   }

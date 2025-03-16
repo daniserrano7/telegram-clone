@@ -114,7 +114,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
               onFocus={() => setIsSearchFocus(true)}
               onBlur={() => setIsSearchFocus(false)}
               className={cx(
-                'w-full rounded-full py-2 px-4 text-font placeholder-font-subtle focus:outline-none focus:ring-2 focus:ring-primary',
+                'w-full rounded-full py-2 px-4 text-font placeholder-font-subtle focus:outline-none focus:ring-2 focus:ring-primary-light',
                 isSearchFocus
                   ? 'bg-transparent'
                   : 'bg-input-background hover:bg-input-background-hover active:bg-input-background-active'

@@ -5,7 +5,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: 'var(--color-primary)',
+        primary: {
+          DEFAULT: 'var(--color-primary)',
+          light: 'var(--color-primary-light)',
+          dark: 'var(--color-primary-dark)',
+        },
         elevation: {
           DEFAULT: 'var(--color-elevation)',
           hover: 'var(--color-elevation-hover)',
