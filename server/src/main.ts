@@ -17,7 +17,7 @@ async function bootstrap() {
   // Listen on localhost instead of 0.0.0.0 for development
   // This ensures CORS works properly with localhost origins
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
-  await app.listen(process.env.PORT || 5000, host);
+  await app.listen(process.env.PORT, host);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();
