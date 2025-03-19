@@ -51,6 +51,20 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
   const openChatWithUser = useChatStore((state) => state.openChatWithUser);
   const user = useAuthStore((state) => state.user);
 
+  // Add keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl/Cmd + K
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Reset focused user when search changes
   useEffect(() => {
     setFocusedUserIndex(-1);
@@ -212,7 +226,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
               }}
               onKeyDown={handleSearchKeyDown}
               className={cx(
-                'w-full rounded-full py-2 px-4 text-font placeholder-font-subtle focus:outline-none focus:ring-2 focus:ring-primary-light',
+                'w-full rounded-full py-2 pl-4 pr-20 text-font placeholder-font-subtle focus:outline-none focus:ring-2 focus:ring-primary-light',
                 isSearchFocus
                   ? 'bg-transparent'
                   : 'bg-input-background hover:bg-input-background-hover active:bg-input-background-active'
@@ -223,20 +237,29 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
               aria-autocomplete="list"
               aria-haspopup="listbox"
             />
-            <button
-              onMouseDown={() => {
-                setSearch('');
-                setIsSearchFocus(false);
-                setFocusedUserIndex(-1);
-              }}
-              className={cx(
-                'absolute hover:bg-elevation rounded-full flex justify-center items-center right-3 top-1/2 -translate-y-1/2 p-[2px]',
-                isSearchFocus ? 'block' : 'hidden'
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              {isSearchFocus && (
+                <button
+                  onMouseDown={() => {
+                    setSearch('');
+                    setIsSearchFocus(false);
+                    setFocusedUserIndex(-1);
+                  }}
+                  className="hover:bg-elevation rounded-full flex justify-center items-center p-[2px]"
+                  aria-label="Clear search"
+                >
+                  <HiOutlineXMark className="size-4 text-icon-subtle" />
+                </button>
               )}
-              aria-label="Clear search"
-            >
-              <HiOutlineXMark className="size-4 text-icon-subtle" />
-            </button>
+              {!isSearchFocus && (
+                <kbd className="hidden md:flex items-center gap-0.5 px-1.5 h-5 text-[10px] font-medium text-font-subtle bg-elevation rounded">
+                  <span className="text-[10px]">
+                    {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}
+                  </span>
+                  <span>K</span>
+                </kbd>
+              )}
+            </div>
           </div>
         </form>
       </div>
