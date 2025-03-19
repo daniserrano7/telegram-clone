@@ -53,6 +53,20 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
     setFocusedUserIndex(-1);
   }, [search]);
 
+  // Get the currently active list of users (either search results or recent searches)
+  const getActiveUserList = () => {
+    if (search) {
+      return foundUsers;
+    } else {
+      return recentSearches.map((user) => ({
+        id: user.id,
+        name: user.username,
+        avatarUrl: user.avatarUrl,
+        description: `Last searched ${new Date(user.lastSearched).toLocaleDateString()}`,
+      }));
+    }
+  };
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
     setIsSearching(true);
@@ -98,8 +112,8 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const displayedUsers = search ? foundUsers : recentSearches;
-    const userCount = displayedUsers.length;
+    const activeUserList = getActiveUserList();
+    const userCount = activeUserList.length;
 
     if (userCount === 0) return;
 
@@ -113,15 +127,8 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
   };
 
   const handleListKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const displayedUsers = search
-      ? foundUsers
-      : recentSearches.map((user) => ({
-          id: user.id,
-          name: user.username,
-          avatarUrl: user.avatarUrl,
-          description: `Last searched ${new Date(user.lastSearched).toLocaleDateString()}`,
-        }));
-    const userCount = displayedUsers.length;
+    const activeUserList = getActiveUserList();
+    const userCount = activeUserList.length;
 
     if (userCount === 0) return;
 
@@ -133,7 +140,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
       setFocusedUserIndex((prev) => (prev - 1 + userCount) % userCount);
     } else if (e.key === 'Enter' && focusedUserIndex >= 0) {
       e.preventDefault();
-      const selectedUser = displayedUsers[focusedUserIndex];
+      const selectedUser = activeUserList[focusedUserIndex];
       handleUserSelect(
         selectedUser.id,
         selectedUser.name,
@@ -154,6 +161,19 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
     }
   }, [focusedUserIndex]);
 
+  // Scroll the focused item into view
+  useEffect(() => {
+    if (focusedUserIndex >= 0 && userListRef.current) {
+      const listItems = userListRef.current.querySelectorAll('[role="option"]');
+      if (listItems && listItems[focusedUserIndex]) {
+        listItems[focusedUserIndex].scrollIntoView({
+          block: 'nearest',
+          behavior: 'smooth',
+        });
+      }
+    }
+  }, [focusedUserIndex]);
+
   return (
     <div className="h-full flex flex-col border-r border-border">
       <SettingsPanel
@@ -164,12 +184,15 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
       {openSection === 'profile' ? (
         <ProfileDialog isOpen={true} onClose={() => setOpenSection(null)} />
       ) : null}
-      <div className="px-4 h-[64px] flex gap-3 items-center border-b border-border">
+      <div className="px-4 flex-shrink-0 h-[64px] flex gap-3 items-center border-b border-border">
         <button onClick={() => setIsSettingsOpen(true)}>
           {/* Search Bar */}
           <HiOutlineBars3 className="size-[24px] text-icon-subtle" />
         </button>
-        <form className="md:w-auto w-full" onSubmit={(e) => e.preventDefault()}>
+        <form
+          className="md:w-auto w-full py-3"
+          onSubmit={(e) => e.preventDefault()}
+        >
           <div className="relative w-full">
             <input
               ref={searchInputRef}
@@ -191,6 +214,11 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
                   ? 'bg-transparent'
                   : 'bg-input-background hover:bg-input-background-hover active:bg-input-background-active'
               )}
+              aria-controls="search-results"
+              aria-expanded={isSearchFocus}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-haspopup="listbox"
             />
             <button
               onMouseDown={() => {
@@ -202,6 +230,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
                 'absolute hover:bg-elevation rounded-full flex justify-center items-center right-3 top-1/2 -translate-y-1/2 p-[2px]',
                 isSearchFocus ? 'block' : 'hidden'
               )}
+              aria-label="Clear search"
             >
               <HiOutlineXMark className="size-4 text-icon-subtle" />
             </button>
@@ -225,7 +254,6 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
         <ChatList
           onChatSelect={onChatSelect}
           triggerSearch={(username) => {
-            console.log('triggerSearch', username);
             setSearch(username);
             setIsSearchFocus(true);
             handleSearch({
@@ -404,38 +432,40 @@ const SearchList = ({
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   listRef: React.RefObject<HTMLDivElement>;
 }) => {
+  // Determine if we're showing search results or recent searches
+  const isShowingSearchResults = !!query;
+
+  // Get the list of users to display
+  const displayUsers = isShowingSearchResults
+    ? foundUsers
+    : recentSearches.map((user) => ({
+        id: user.id,
+        name: user.username,
+        avatarUrl: user.avatarUrl,
+        description: `Last searched ${new Date(user.lastSearched).toLocaleDateString()}`,
+      }));
+
   return (
     <div
       className="flex-1 overflow-y-auto bg-background-primary focus:outline-none"
       ref={listRef}
       tabIndex={0}
       onKeyDown={onKeyDown}
+      role="listbox"
+      id="search-results"
+      aria-label={isShowingSearchResults ? 'Search results' : 'Recent searches'}
     >
       {isSearching ? (
         <div className="flex justify-center items-center h-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
         </div>
-      ) : query ? (
-        <div className="py-2">
-          <h3 className="px-4 py-2 text-sm text-font-subtle">Global Search</h3>
-          {foundUsers.length === 0 ? (
-            <p className="px-4 py-2 text-font-subtle">No users found</p>
-          ) : (
-            foundUsers.map((user, index) => (
-              <UserListItem
-                key={user.id}
-                user={user}
-                isActive={focusedUserIndex === index}
-                onClick={() => onUserSelect(user.id, user.name, user.avatarUrl)}
-              />
-            ))
-          )}
-        </div>
       ) : (
         <div className="py-2">
           <div className="px-4 py-2 flex justify-between items-center">
-            <h3 className="text-sm text-font-subtle">Recent Searches</h3>
-            {recentSearches.length > 0 && (
+            <h3 className="text-sm text-font-subtle">
+              {isShowingSearchResults ? 'Global Search' : 'Recent Searches'}
+            </h3>
+            {!isShowingSearchResults && recentSearches.length > 0 && (
               <button
                 onMouseDown={(e) => {
                   e.preventDefault();
@@ -443,28 +473,24 @@ const SearchList = ({
                 }}
                 className="p-1.5 rounded-full hover:bg-elevation transition-colors group"
                 title="Clear recent searches"
+                aria-label="Clear recent searches"
               >
                 <HiOutlineTrash className="w-4 h-4 text-icon-subtle group-hover:text-icon-error" />
               </button>
             )}
           </div>
-          {recentSearches.length === 0 ? (
-            <p className="px-4 py-2 text-font-subtle">No recent searches</p>
+          {displayUsers.length === 0 ? (
+            <p className="px-4 py-2 text-font-subtle">
+              {isShowingSearchResults ? 'No users found' : 'No recent searches'}
+            </p>
           ) : (
-            recentSearches.map((user) => (
+            displayUsers.map((user, index) => (
               <UserListItem
                 key={user.id}
-                user={{
-                  id: user.id,
-                  name: user.username,
-                  avatarUrl: user.avatarUrl,
-                  description: `Last searched ${new Date(
-                    user.lastSearched
-                  ).toLocaleDateString()}`,
-                }}
-                onClick={() =>
-                  onUserSelect(user.id, user.username, user.avatarUrl)
-                }
+                user={user}
+                isActive={focusedUserIndex === index}
+                onClick={() => onUserSelect(user.id, user.name, user.avatarUrl)}
+                position={index}
               />
             ))
           )}
@@ -478,10 +504,12 @@ const UserListItem = ({
   user,
   isActive,
   onClick,
+  position,
 }: {
   user: ChatPreview;
   isActive?: boolean;
   onClick: () => void;
+  position: number;
 }) => (
   <div
     className={cx(
@@ -493,17 +521,20 @@ const UserListItem = ({
     onMouseDown={onClick}
     role="option"
     aria-selected={isActive}
+    id={`user-option-${position}`}
+    tabIndex={-1}
+    data-index={position}
   >
     <Avatar username={user.name} src={user.avatarUrl} />
     <div>
-      <h4 className={cx('text-font', isActive && 'text-font-primary-contrast')}>
+      <h4 className={cx(isActive ? 'text-font-primary-contrast' : 'text-font')}>
         {user.name}
       </h4>
       {user.description && (
         <p
           className={cx(
-            'text-sm text-font-subtle',
-            isActive && 'text-font-primary-contrast/80'
+            'text-sm',
+            isActive ? 'text-font-primary-contrast' : 'text-font-subtle'
           )}
         >
           {user.description}
