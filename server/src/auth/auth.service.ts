@@ -2,7 +2,7 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { DbService } from 'src/db/db.service';
-
+import { mapDbUserToUser } from 'src/user/user.service';
 @Injectable()
 export class AuthService {
   constructor(private readonly db: DbService) {}
@@ -41,43 +41,31 @@ export class AuthService {
       throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.db.user.create({
+    const dbUser = await this.db.user.create({
       data: {
         username,
         password: hashedPassword,
       },
-      select: {
-        id: true,
-        username: true,
-        createdAt: true,
-        updatedAt: true,
-        deletedAt: true,
+      omit: {
+        password: true,
       },
     });
-    const token = this.generateToken(user.id);
+    const user = mapDbUserToUser(dbUser);
+    const token = this.generateToken(dbUser.id);
+
     return { user, token };
   }
 
   async login(username: string, password: string) {
-    const user = await this.db.user.findUnique({ where: { username } });
+    const dbUser = await this.db.user.findUnique({ where: { username } });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!dbUser || !(await bcrypt.compare(password, dbUser.password))) {
       throw new Error('Invalid credentials');
     }
 
-    const userWithouthPassword = {
-      id: user.id,
-      onlineStatus: user.onlineStatus,
-      lastConnection: user.lastConnection,
-      bio: user.bio,
-      avatarUrl: user.avatarUrl,
-      username: user.username,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      deletedAt: user.deletedAt,
-    };
+    const user = mapDbUserToUser(dbUser);
 
-    const token = this.generateToken(user.id);
-    return { token, user: userWithouthPassword };
+    const token = this.generateToken(dbUser.id);
+    return { token, user };
   }
 }

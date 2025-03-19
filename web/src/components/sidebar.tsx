@@ -304,6 +304,7 @@ const ChatList = ({
   const activeChat = useChatStore((state) => state.activeChat);
   const findPartner = useChatStore((state) => state.getChatPartner);
   const contacts = useUserStore((state) => state.contacts);
+  console.log('chats', chats);
 
   const formatLastMessage = (date: Date): string => {
     const today = new Date();
@@ -366,6 +367,7 @@ const ChatList = ({
     <div className="flex-1 overflow-y-auto">
       {sortedChats.map((chat) => {
         const partner = findPartner(chat);
+        console.log('partner', partner);
         if (!partner) return null;
 
         const contact = contacts[partner.id];

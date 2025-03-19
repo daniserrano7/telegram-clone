@@ -33,12 +33,8 @@ export class ChatService {
       },
       include: {
         members: {
-          select: {
-            id: true,
-            username: true,
-            createdAt: true,
-            updatedAt: true,
-            deletedAt: true,
+          omit: {
+            password: true,
           },
         },
         messages: true,
@@ -57,12 +53,8 @@ export class ChatService {
         updatedAt: true,
         deletedAt: true,
         members: {
-          select: {
-            id: true,
-            username: true,
-            createdAt: true,
-            updatedAt: true,
-            deletedAt: true,
+          omit: {
+            password: true,
           },
         },
         messages: true,
@@ -90,16 +82,8 @@ export class ChatService {
       },
       include: {
         members: {
-          select: {
-            id: true,
-            username: true,
-            avatarUrl: true,
-            bio: true,
-            onlineStatus: true,
-            lastConnection: true,
-            createdAt: true,
-            updatedAt: true,
-            deletedAt: true,
+          omit: {
+            password: true,
           },
         },
         messages: {
@@ -126,14 +110,8 @@ export class ChatService {
         updatedAt: true,
         deletedAt: true,
         members: {
-          select: {
-            id: true,
-            username: true,
-            avatarUrl: true,
-            bio: true,
-            createdAt: true,
-            updatedAt: true,
-            deletedAt: true,
+          omit: {
+            password: true,
           },
         },
         messages: true,
@@ -194,7 +172,17 @@ export class ChatService {
   ) {
     const message = await this.db.message.findUnique({
       where: { id: messageId },
-      include: { chat: { include: { members: true } } },
+      include: {
+        chat: {
+          include: {
+            members: {
+              omit: {
+                password: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!message) {

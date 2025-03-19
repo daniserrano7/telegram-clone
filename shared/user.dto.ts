@@ -14,9 +14,9 @@ export interface User {
   avatarUrl: string;
 }
 
-export type GetUsersResponseDto = User[];
-
 export type GetUserRequestDto = {
   id: UserId;
 };
+export type GetUsersResponseDto = User[];
+
 export type GetUserResponseDto = User;
