@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import cx from 'classix';
 import { type UserId } from '@shared/user.dto';
 import { useLocalStorage } from 'src/hooks/useLocalStorage';
@@ -42,8 +42,16 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
     'recentSearches',
     []
   );
+  const [focusedUserIndex, setFocusedUserIndex] = useState<number>(-1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const userListRef = useRef<HTMLDivElement>(null);
   const openChatWithUser = useChatStore((state) => state.openChatWithUser);
   const user = useAuthStore((state) => state.user);
+
+  // Reset focused user when search changes
+  useEffect(() => {
+    setFocusedUserIndex(-1);
+  }, [search]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -89,6 +97,63 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
     onChatSelect?.();
   };
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const displayedUsers = search ? foundUsers : recentSearches;
+    const userCount = displayedUsers.length;
+
+    if (userCount === 0) return;
+
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      setFocusedUserIndex(0);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedUserIndex(0);
+    }
+  };
+
+  const handleListKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const displayedUsers = search
+      ? foundUsers
+      : recentSearches.map((user) => ({
+          id: user.id,
+          name: user.username,
+          avatarUrl: user.avatarUrl,
+          description: `Last searched ${new Date(user.lastSearched).toLocaleDateString()}`,
+        }));
+    const userCount = displayedUsers.length;
+
+    if (userCount === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedUserIndex((prev) => (prev + 1) % userCount);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedUserIndex((prev) => (prev - 1 + userCount) % userCount);
+    } else if (e.key === 'Enter' && focusedUserIndex >= 0) {
+      e.preventDefault();
+      const selectedUser = displayedUsers[focusedUserIndex];
+      handleUserSelect(
+        selectedUser.id,
+        selectedUser.name,
+        selectedUser.avatarUrl
+      );
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setFocusedUserIndex(-1);
+      searchInputRef.current?.focus();
+    }
+  };
+
+  // Focus management
+  useEffect(() => {
+    if (focusedUserIndex >= 0 && userListRef.current) {
+      // Focus the user list when a user is focused
+      userListRef.current.focus();
+    }
+  }, [focusedUserIndex]);
+
   return (
     <div className="h-full flex flex-col border-r border-border">
       <SettingsPanel
@@ -107,12 +172,19 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
         <form className="md:w-auto w-full" onSubmit={(e) => e.preventDefault()}>
           <div className="relative w-full">
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search"
               value={search}
               onChange={handleSearch}
               onFocus={() => setIsSearchFocus(true)}
-              onBlur={() => setIsSearchFocus(false)}
+              onBlur={() => {
+                // Only blur if we're not focusing on the list
+                if (focusedUserIndex === -1) {
+                  setIsSearchFocus(false);
+                }
+              }}
+              onKeyDown={handleSearchKeyDown}
               className={cx(
                 'w-full rounded-full py-2 px-4 text-font placeholder-font-subtle focus:outline-none focus:ring-2 focus:ring-primary-light',
                 isSearchFocus
@@ -124,6 +196,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
               onMouseDown={() => {
                 setSearch('');
                 setIsSearchFocus(false);
+                setFocusedUserIndex(-1);
               }}
               className={cx(
                 'absolute hover:bg-elevation rounded-full flex justify-center items-center right-3 top-1/2 -translate-y-1/2 p-[2px]',
@@ -144,15 +217,34 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
           recentSearches={recentSearches}
           clearRecentSearches={() => setRecentSearches([])}
           onUserSelect={handleUserSelect}
+          focusedUserIndex={focusedUserIndex}
+          onKeyDown={handleListKeyDown}
+          listRef={userListRef}
         />
       ) : (
-        <ChatList onChatSelect={onChatSelect} />
+        <ChatList
+          onChatSelect={onChatSelect}
+          triggerSearch={(username) => {
+            console.log('triggerSearch', username);
+            setSearch(username);
+            setIsSearchFocus(true);
+            handleSearch({
+              target: { value: username },
+            } as React.ChangeEvent<HTMLInputElement>);
+          }}
+        />
       )}
     </div>
   );
 };
 
-const ChatList = ({ onChatSelect }: { onChatSelect?: () => void }) => {
+const ChatList = ({
+  onChatSelect,
+  triggerSearch,
+}: {
+  onChatSelect?: () => void;
+  triggerSearch: (search: string) => void;
+}) => {
   const chats = useChatStore((state) => state.chats);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const activeChat = useChatStore((state) => state.activeChat);
@@ -202,6 +294,16 @@ const ChatList = ({ onChatSelect }: { onChatSelect?: () => void }) => {
         <p className="text-font-subtle text-sm max-w-[240px]">
           Use the search bar above to find people and start a new conversation
         </p>
+        <span className="text-font-subtle text-sm my-2">- o -</span>
+        <p className="text-font-subtle text-sm max-w-[240px]">
+          You can start chatting with me!
+        </p>
+        <button
+          onClick={() => triggerSearch('daniel.serrano')}
+          className="text-font-primary text-sm rounded-md mt-1 px-2 py-1 bg-elevation hover:bg-elevation-hover active:bg-elevation-active transition-colors"
+        >
+          daniel.serrano
+        </button>
       </div>
     );
   }
@@ -288,6 +390,9 @@ const SearchList = ({
   recentSearches,
   clearRecentSearches,
   onUserSelect,
+  focusedUserIndex,
+  onKeyDown,
+  listRef,
 }: {
   query: string;
   isSearching: boolean;
@@ -295,9 +400,17 @@ const SearchList = ({
   recentSearches: SearchUser[];
   clearRecentSearches: () => void;
   onUserSelect: (userId: number, username: string, avatarUrl: string) => void;
+  focusedUserIndex: number;
+  onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+  listRef: React.RefObject<HTMLDivElement>;
 }) => {
   return (
-    <div className="flex-1 overflow-y-auto bg-background-primary">
+    <div
+      className="flex-1 overflow-y-auto bg-background-primary focus:outline-none"
+      ref={listRef}
+      tabIndex={0}
+      onKeyDown={onKeyDown}
+    >
       {isSearching ? (
         <div className="flex justify-center items-center h-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
@@ -308,10 +421,11 @@ const SearchList = ({
           {foundUsers.length === 0 ? (
             <p className="px-4 py-2 text-font-subtle">No users found</p>
           ) : (
-            foundUsers.map((user) => (
+            foundUsers.map((user, index) => (
               <UserListItem
                 key={user.id}
                 user={user}
+                isActive={focusedUserIndex === index}
                 onClick={() => onUserSelect(user.id, user.name, user.avatarUrl)}
               />
             ))
@@ -370,16 +484,30 @@ const UserListItem = ({
   onClick: () => void;
 }) => (
   <div
-    className={`px-4 py-2 flex items-center space-x-3 hover:bg-elevation cursor-pointer ${
-      isActive ? 'bg-primary text-font-primary-contrast' : 'text-font'
-    }`}
+    className={cx(
+      'px-4 py-2 flex items-center space-x-3 cursor-pointer transition-colors',
+      isActive
+        ? 'bg-primary text-font-primary-contrast ring-2 ring-primary-light ring-opacity-75'
+        : 'text-font hover:bg-elevation'
+    )}
     onMouseDown={onClick}
+    role="option"
+    aria-selected={isActive}
   >
     <Avatar username={user.name} src={user.avatarUrl} />
     <div>
-      <h4 className="text-font">{user.name}</h4>
+      <h4 className={cx('text-font', isActive && 'text-font-primary-contrast')}>
+        {user.name}
+      </h4>
       {user.description && (
-        <p className="text-sm text-font-subtle">{user.description}</p>
+        <p
+          className={cx(
+            'text-sm text-font-subtle',
+            isActive && 'text-font-primary-contrast/80'
+          )}
+        >
+          {user.description}
+        </p>
       )}
     </div>
   </div>
