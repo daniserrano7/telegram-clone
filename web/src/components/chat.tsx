@@ -600,6 +600,13 @@ const MessageInput = () => {
   const sendMessage = useChatStore((state) => state.sendMessage);
   const createChat = useChatStore((state) => state.createChat);
   const emitTypingStatus = useUserStore((state) => state.emitTypingStatus);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [activeChat?.id]);
 
   if (!activeChat) return null;
 
@@ -635,6 +642,7 @@ const MessageInput = () => {
     <div className="p-4 bg-background-primary border-t border-border">
       <form className="flex items-center space-x-4" onSubmit={handleSubmit}>
         <input
+          ref={inputRef}
           type="text"
           placeholder="Write a message..."
           autoFocus
