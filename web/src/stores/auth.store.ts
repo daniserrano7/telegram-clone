@@ -3,6 +3,7 @@ import { RegisterRequestDto, LoginRequestDto } from '@shared/auth.dto';
 import { type User } from '@shared/user.dto';
 import { apiService } from '../services/api.service';
 import { useChatStore } from './chat.store';
+import { RECENT_SEARCHES_KEY } from 'src/hooks/useLocalStorage';
 
 interface UserAuth {
   token: string;
@@ -106,5 +107,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ token: '', user: null, isLogged: false });
     useChatStore.getState().cleanUp();
     localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
+    localStorage.removeItem(RECENT_SEARCHES_KEY);
   },
 }));

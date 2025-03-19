@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import cx from 'classix';
 import { type UserId } from '@shared/user.dto';
-import { useLocalStorage } from 'src/hooks/useLocalStorage';
+import {
+  useLocalStorage,
+  RECENT_SEARCHES_KEY,
+} from 'src/hooks/useLocalStorage';
 import { Avatar } from 'src/components/avatar';
 import {
   HiOutlineXMark,
@@ -39,7 +42,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [foundUsers, setFoundUsers] = useState<ChatPreview[]>([]);
   const [recentSearches, setRecentSearches] = useLocalStorage<SearchUser[]>(
-    'recentSearches',
+    RECENT_SEARCHES_KEY,
     []
   );
   const [focusedUserIndex, setFocusedUserIndex] = useState<number>(-1);

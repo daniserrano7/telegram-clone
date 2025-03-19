@@ -21,3 +21,5 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 
   return [storedValue, setStoredValue] as const;
 }
+
+export const RECENT_SEARCHES_KEY = 'recentSearches';
