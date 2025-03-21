@@ -1,4 +1,6 @@
 node_modules
 server/.env.test
 *.env
+*.env.dev
+*.env.prod
 server/uploads/avatars

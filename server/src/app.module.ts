@@ -13,7 +13,11 @@ import { UploadModule } from './upload/upload.module';
     AuthModule,
     ChatModule,
     UserModule,
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      envFilePath:
+        process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.dev',
+      isGlobal: true,
+    }),
     ScheduleModule.forRoot(),
     UploadModule,
   ],

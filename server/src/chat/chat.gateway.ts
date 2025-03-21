@@ -19,16 +19,18 @@ import { Events } from '@shared/gateway.dto';
 import { UserStatusService } from '../user/user-status.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-const origins =
-  process.env.NODE_ENV === 'production'
-    ? ['http://localhost:3000', 'http://127.0.0.1:3000']
-    : '0.0.0.0:3000';
+// Get allowed origins from environment variable or use defaults
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
+
+if (!allowedOrigins) {
+  throw new Error('ALLOWED_ORIGINS is not set');
+}
 
 @WebSocketGateway({
   cors: {
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
-    origin: origins,
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -126,7 +128,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_5_SECONDS)
   handleStaleConnections() {
     this.userStatusService.checkStaleConnections();
   }
