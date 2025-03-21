@@ -204,7 +204,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
       <div className="px-4 flex-shrink-0 h-[64px] flex gap-3 items-center border-b border-border">
         <button onClick={() => setIsSettingsOpen(true)}>
           {/* Search Bar */}
-          <HiOutlineBars3 className="size-[24px] text-icon-subtle" />
+          <HiOutlineBars3 className="size-[24px] text-icon-subtle hover:text-icon" />
         </button>
         <form
           className="md:w-auto w-full py-3"
@@ -304,7 +304,6 @@ const ChatList = ({
   const activeChat = useChatStore((state) => state.activeChat);
   const findPartner = useChatStore((state) => state.getChatPartner);
   const contacts = useUserStore((state) => state.contacts);
-  console.log('chats', chats);
 
   const formatLastMessage = (date: Date): string => {
     const today = new Date();
@@ -367,7 +366,6 @@ const ChatList = ({
     <div className="flex-1 overflow-y-auto">
       {sortedChats.map((chat) => {
         const partner = findPartner(chat);
-        console.log('partner', partner);
         if (!partner) return null;
 
         const contact = contacts[partner.id];
@@ -405,7 +403,7 @@ const ChatList = ({
                 <h3
                   className={`font-bold p-0 truncate ${
                     activeChat?.id === chat.id
-                      ? 'text-font-primary-contrast'
+                      ? 'text-font-primary-contrast dark:text-font'
                       : 'text-font'
                   }`}
                 >
@@ -414,7 +412,7 @@ const ChatList = ({
                 <span
                   className={`text-xs ${
                     activeChat?.id === chat.id
-                      ? 'text-font-primary-contrast'
+                      ? 'text-font-primary-contrast dark:text-font'
                       : 'text-font-subtle'
                   }`}
                 >
@@ -424,7 +422,7 @@ const ChatList = ({
               <p
                 className={`text-sm truncate ${
                   activeChat?.id === chat.id
-                    ? 'text-font-primary-contrast'
+                    ? 'text-font-primary-contrast dark:text-font'
                     : 'text-font-subtle'
                 }`}
               >
@@ -555,14 +553,20 @@ const UserListItem = ({
   >
     <Avatar username={user.name} src={user.avatarUrl} />
     <div>
-      <h4 className={cx(isActive ? 'text-font-primary-contrast' : 'text-font')}>
+      <h4
+        className={cx(
+          isActive ? 'text-font-primary-contrast dark:text-font' : 'text-font'
+        )}
+      >
         {user.name}
       </h4>
       {user.description && (
         <p
           className={cx(
             'text-sm',
-            isActive ? 'text-font-primary-contrast' : 'text-font-subtle'
+            isActive
+              ? 'text-font-primary-contrast dark:text-font'
+              : 'text-font-subtle'
           )}
         >
           {user.description}

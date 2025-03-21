@@ -42,7 +42,7 @@ export const Avatar = ({ username, src, size = 48 }: AvatarProps) => {
           'inset 0 0 25px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15)',
       }}
     >
-      {fullPath && !imageError ? (
+      {src && !imageError ? (
         <img
           src={fullPath}
           alt={username}

@@ -253,7 +253,7 @@ const ChatHeader = ({
                 setIsSearching(false);
                 clearSearch();
               }}
-              className="p-2 hover:bg-elevation rounded-full transition-colors"
+              className="p-2 hover:bg-elevation-hover rounded-full transition-colors"
             >
               <HiOutlineChevronLeft className="w-5 h-5 text-icon-subtle" />
             </button>
@@ -273,13 +273,13 @@ const ChatHeader = ({
                 <div className="flex flex-col">
                   <button
                     onClick={previousMatch}
-                    className="p-1 hover:bg-elevation rounded-sm transition-colors"
+                    className="p-1 hover:bg-elevation-hover rounded-sm transition-colors"
                   >
                     <HiOutlineChevronUp className="w-4 h-4 text-icon-subtle" />
                   </button>
                   <button
                     onClick={nextMatch}
-                    className="p-1 hover:bg-elevation rounded-sm transition-colors"
+                    className="p-1 hover:bg-elevation-hover rounded-sm transition-colors"
                   >
                     <HiOutlineChevronDown className="w-4 h-4 text-icon-subtle" />
                   </button>
@@ -297,7 +297,7 @@ const ChatHeader = ({
               )}
               <button
                 onClick={() => setIsProfileOpen(true)}
-                className="flex items-center space-x-3 hover:bg-elevation -ml-1 px-2 py-1 rounded-lg transition-colors"
+                className="flex items-center space-x-3 hover:bg-elevation-hover -ml-1 px-2 py-1 rounded-lg transition-colors"
               >
                 <div className="relative">
                   <Avatar
@@ -320,15 +320,18 @@ const ChatHeader = ({
                 </div>
               </button>
             </div>
-            <div className="flex items-center space-x-4 text-icon-subtle">
+            <div className="flex items-center space-x-2 text-icon-subtle">
               <button
                 onClick={() => setIsSearching(true)}
-                className="p-2 hover:bg-elevation rounded-full transition-colors"
+                className="p-2 hover:bg-elevation-hover rounded-full transition-colors"
               >
                 <HiOutlineMagnifyingGlass className="w-5 h-5" />
               </button>
-              <button onClick={toggleChatInfo} className="hidden lg:block">
-                <HiOutlineViewColumns className="w-5 h-5 cursor-pointer hover:text-icon" />
+              <button
+                onClick={toggleChatInfo}
+                className="hidden p-2 hover:bg-elevation-hover rounded-full lg:block"
+              >
+                <HiOutlineViewColumns className="w-5 h-5 cursor-pointer" />
               </button>
             </div>
           </>

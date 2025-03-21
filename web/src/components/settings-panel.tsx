@@ -112,7 +112,7 @@ export const SettingsPanel = ({
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-elevation transition-colors"
+                className="p-2 rounded-full hover:bg-elevation-hover transition-colors"
               >
                 <HiOutlineXMark className="w-5 h-5 text-icon-subtle" />
               </button>

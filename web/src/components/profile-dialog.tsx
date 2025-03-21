@@ -115,7 +115,7 @@ export const ProfileDialog = ({
           )}
         >
           <Dialog.Close asChild>
-            <button className="absolute right-4 top-4 p-2 rounded-full hover:bg-elevation transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            <button className="absolute right-4 top-4 p-2 rounded-full hover:bg-elevation-hover transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
               <HiOutlineXMark className="w-5 h-5 text-icon-subtle" />
             </button>
           </Dialog.Close>
@@ -171,7 +171,7 @@ export const ProfileDialog = ({
                 {isOwnProfile && !isEditingBio && (
                   <button
                     onClick={() => setIsEditingBio(true)}
-                    className="p-1 hover:bg-elevation rounded-full transition-colors"
+                    className="p-2 hover:bg-elevation-hover rounded-full transition-colors"
                   >
                     <HiOutlinePencil className="w-4 h-4 text-icon-subtle" />
                   </button>
@@ -183,7 +183,7 @@ export const ProfileDialog = ({
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="Write something about yourself..."
-                    className="w-full p-2 bg-elevation rounded-lg text-font resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full p-2 bg-elevation-sunken rounded-lg text-font resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                     rows={3}
                     maxLength={160}
                   />
@@ -197,7 +197,7 @@ export const ProfileDialog = ({
                           setIsEditingBio(false);
                           setBio(user.bio || '');
                         }}
-                        className="px-3 py-1 text-sm text-font-subtle hover:bg-elevation rounded-lg transition-colors"
+                        className="px-3 py-1 text-sm text-font-subtle hover:bg-elevation-hover rounded-lg transition-colors"
                         disabled={isSaving}
                       >
                         Cancel
