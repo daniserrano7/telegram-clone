@@ -59,7 +59,7 @@ export const SettingsPanel = ({
       <button
         onClick={onClick}
         className={cx(
-          'w-full flex items-center px-6 py-3 text-left gap-4 hover:bg-elevation',
+          'w-full flex items-center px-6 py-3 text-left gap-4 hover:bg-elevation-hover',
           className
         )}
       >

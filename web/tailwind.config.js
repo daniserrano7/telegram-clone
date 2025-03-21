@@ -19,7 +19,8 @@ export default {
         },
         background: {
           primary: 'var(--color-background-primary)',
-          secondary: 'var(--color-background-secondary)',
+          chat: 'var(--color-background-chat)',
+          'chat-bubble': 'var(--color-background-chat-bubble)',
           hover: 'var(--color-background-primary-hover)',
           active: 'var(--color-background-primary-active)',
         },
@@ -40,6 +41,7 @@ export default {
           DEFAULT: 'var(--color-icon)',
           secondary: 'var(--color-icon-secondary)',
           subtle: 'var(--color-icon-subtle)',
+          info: 'var(--color-icon-info)',
           success: 'var(--color-icon-success)',
           error: 'var(--color-icon-error)',
         },
@@ -51,6 +53,9 @@ export default {
           'border-hover': 'var(--color-input-border-hover)',
           'border-active': 'var(--color-input-border-active)',
         },
+      },
+      backgroundImage: {
+        'chat-gradient': 'var(--color-background-chat-gradient)',
       },
       animation: {
         'message-in': 'message-in 300ms ease-out',

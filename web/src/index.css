@@ -75,12 +75,24 @@
   --color-background-primary: #ffffff;
   --color-background-primary-hover: #f4f4f5;
   --color-background-primary-active: #e9e9ec;
-  --color-background-secondary: #effdde;
+  --color-background-chat: #87b489;
+  --color-background-chat-bubble: #effdde;
+  --color-background-chat-gradient:
+    radial-gradient(
+      circle at 0 0,
+      rgba(226, 232, 104, 0.8) 10%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 100% 100%,
+      rgba(238, 240, 189, 0.8) 10%,
+      transparent 45%
+    );
   --color-border: #dcdce1;
   --color-font: #1a1a1a;
   --color-font-primary: #2481cc;
   --color-font-primary-contrast: #ffffff;
-  --color-font-secondary: #60bc55;
+  --color-font-secondary: #71ab92;
   --color-font-subtle: #6b7280;
   --color-font-error: #dc2626;
   --color-icon: #1a1a1a;
@@ -109,18 +121,24 @@
   --color-background-primary: #17212b;
   --color-background-primary-hover: #1e1e2d;
   --color-background-primary-active: #2a2a3c;
+  --color-background-chat: #0f1620;
+  --color-background-chat-bubble: #8774e1;
+  --color-background-chat-gradient:
+    radial-gradient(circle at bottom left, #ff69b4, transparent 55%),
+    radial-gradient(circle at 80% 0%, #4169e1, transparent 55%),
+    linear-gradient(135deg, #8a2be2, #ffdab9);
   --color-border: #242f3d;
   --color-font: #ffffff;
   --color-font-primary: #64b5f6;
-  --color-font-primary-contrast: #ffffff;
-  --color-font-secondary: #64b5f6;
+  --color-font-primary-contrast: #242f3d;
+  --color-font-secondary: #cfc7f3;
   --color-font-subtle: #8e99a4;
   --color-font-error: #ef4444;
   --color-icon: #ffffff;
   --color-icon-subtle: #8e99a4;
   --color-icon-success: #4ade80;
   --color-icon-error: #ef4444;
-  --color-icon-info: #64b5f6;
+  --color-icon-info: #2fe471;
   --color-input-background: #242f3d;
   --color-input-background-hover: #2d3a4a;
   --color-input-background-active: #364758;

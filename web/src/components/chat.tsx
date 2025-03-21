@@ -12,6 +12,7 @@ import { BiCheck, BiCheckDouble } from 'react-icons/bi';
 import { useUserStore } from 'src/stores/user.store';
 import { useAuthStore } from 'src/stores/auth.store';
 import { useChatStore } from 'src/stores/chat.store';
+import { useThemeStore } from 'src/stores/theme.store';
 import { type MessageStatus } from '@shared/gateway.dto';
 import { Events } from '@shared/gateway.dto';
 import { type Message } from '@shared/chat.dto';
@@ -26,6 +27,7 @@ export const Chat = ({
   showBackButton,
 }: ChatHeaderProps) => {
   const activeChat = useChatStore((state) => state.activeChat);
+  const themeStoreValue = useThemeStore((state) => state.theme);
 
   if (!activeChat) {
     return (
@@ -46,7 +48,15 @@ export const Chat = ({
           <div className="text-center">
             {/* Animated illustration */}
             <div className="relative w-48 h-48 mx-auto">
-              <div className="absolute inset-0 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+              <div
+                className="absolute inset-0 rounded-full blur-3xl animate-pulse"
+                style={{
+                  backgroundColor:
+                    themeStoreValue === 'dark'
+                      ? 'rgba(36, 129, 204, 0.2)' // Primary color with 20% opacity
+                      : 'rgba(36, 129, 204, 0.05)', // Primary color with 5% opacity
+                }}
+              />
               <div className="relative flex items-center justify-center h-full">
                 <div className="bubble-container">
                   {[...Array(3)].map((_, i) => (
@@ -60,7 +70,21 @@ export const Chat = ({
                         } as React.CSSProperties
                       }
                     >
-                      <div className="w-24 h-24 bg-elevation/80 backdrop-blur-sm rounded-tl-2xl rounded-tr-2xl rounded-br-2xl rounded-bl-md flex items-center justify-center shadow-lg">
+                      <div
+                        className="w-24 h-24 backdrop-blur-sm rounded-tl-2xl rounded-tr-2xl rounded-br-2xl rounded-bl-md flex items-center justify-center shadow-lg"
+                        style={{
+                          backgroundColor:
+                            themeStoreValue === 'dark'
+                              ? 'rgba(45, 58, 74, 0.9)' // elevation-hover with 90% opacity
+                              : 'rgba(244, 244, 245, 0.8)', // elevation with 80% opacity
+                          borderWidth:
+                            themeStoreValue === 'dark' ? '1px' : '0px',
+                          borderColor:
+                            themeStoreValue === 'dark'
+                              ? 'rgba(36, 129, 204, 0.2)' // primary with 20% opacity
+                              : 'transparent',
+                        }}
+                      >
                         <span className="text-4xl transform -rotate-12 hover:scale-110 transition-transform cursor-default">
                           {['💬', '✨', '👋'][i]}
                         </span>
@@ -71,7 +95,21 @@ export const Chat = ({
               </div>
             </div>
 
-            <div className="relative inset-2 backdrop-blur-sm bg-background-primary/30 px-4 py-2 rounded-lg">
+            <div
+              className="relative inset-2 backdrop-blur-sm rounded-lg shadow-lg"
+              style={{
+                backgroundColor:
+                  themeStoreValue === 'dark'
+                    ? 'rgba(23, 33, 43, 0.5)' // background-primary with 50% opacity
+                    : 'rgba(255, 255, 255, 0.3)', // background-primary with 30% opacity
+                borderWidth: themeStoreValue === 'dark' ? '1px' : '0px',
+                borderColor:
+                  themeStoreValue === 'dark'
+                    ? 'rgba(36, 129, 204, 0.2)' // primary with 20% opacity
+                    : 'transparent',
+                padding: '0.5rem 1rem',
+              }}
+            >
               <h2 className="text-2xl font-medium text-font space-x-3">
                 <span className="inline-block animate-bounce">Let's</span>
                 <span className="inline-block text-primary relative">
@@ -82,7 +120,13 @@ export const Chat = ({
                 </span>
                 <span className="inline-block">together!</span>
               </h2>
-              <p className="text-sm text-font-subtle opacity-75">
+              <p
+                className="text-sm"
+                style={{
+                  color: 'var(--color-font-subtle)',
+                  opacity: themeStoreValue === 'dark' ? 1 : 0.75,
+                }}
+              >
                 Pick a chat or start a new one
               </p>
             </div>
@@ -115,25 +159,32 @@ export const Chat = ({
           showBackButton={showBackButton}
         />
       </div>
-      <div className="flex-1 overflow-hidden relative bg-[#dfe8d4]">
-        <div
-          className="absolute w-full h-full top-0 left-0 pointer-events-none"
-          style={{
-            backgroundImage: `
-            radial-gradient(circle at 0 0, rgba(226, 232, 104, 0.8) 10%, transparent 45%),
-              radial-gradient(circle at 100% 100%, rgba(238, 240, 189, 0.8) 10%, transparent 45%)
-            `,
-            backgroundColor: '#87b489',
-          }}
-        />
-        <canvas
-          className="absolute w-full h-full top-0 opacity-20 left-0 pointer-events-none"
-          style={{
-            backgroundImage: `url('/pattern.svg')`,
-            opacity: 0.3,
-            willChange: 'transform',
-          }}
-        />
+      <div className="flex-1 overflow-hidden relative">
+        <div className="absolute w-full h-full top-0 left-0 bg-background-chat pointer-events-none" />
+        {themeStoreValue === 'light' ? (
+          <>
+            <div className="absolute w-full h-full top-0 left-0 bg-chat-gradient pointer-events-none" />
+            <canvas
+              className="absolute w-full bg-chat-gradient h-full top-0 opacity-30 left-0 pointer-events-none"
+              style={{
+                backgroundImage: `url('/pattern.svg')`,
+                willChange: 'transform',
+              }}
+            />
+          </>
+        ) : themeStoreValue === 'dark' ? (
+          <canvas
+            className="w-full h-full absolute top-0 left-0 pointer-events-none opacity-30 bg-chat-gradient"
+            style={{
+              maskImage: 'url("/pattern.svg")',
+              WebkitMaskImage: 'url("/pattern.svg")',
+              maskRepeat: 'repeat',
+              WebkitMaskRepeat: 'repeat',
+              willChange: 'transform',
+            }}
+          />
+        ) : null}
+
         <MessageList />
       </div>
       <div className="flex-shrink-0 relative">
@@ -384,7 +435,7 @@ const MessageList = () => {
                     : 'hidden'
                 )}
               >
-                <div className="bg-[rgba(74,102,72,0.6)] text-font-primary-contrast text-xs px-3 py-1 rounded-full">
+                <div className="bg-[rgba(74,102,72,0.6)] dark:bg-[rgba(111,49,169,0.6)] text-white text-xs px-3 py-1 rounded-full">
                   {new Date(message.createdAt).toLocaleDateString(undefined, {
                     month: 'long',
                     day: 'numeric',
@@ -513,7 +564,7 @@ const Message = ({
         className={cx(
           'max-w-[500px] group relative px-3 py-1 shadow-[0px_1px_2px_rgba(0,0,0,0.13)]',
           // Base styles
-          isOwn ? 'bg-background-secondary' : 'bg-elevation',
+          isOwn ? 'bg-background-chat-bubble' : 'bg-elevation',
           // Border radius based on position and ownership
           isOwn &&
             position === 'single' &&
@@ -533,19 +584,10 @@ const Message = ({
           !isOwn &&
             position === 'last' &&
             'rounded-2xl rounded-tl-md rounded-bl-none',
-          // Spacing
           position === 'last' || position === 'single' ? '' : 'lg:ml-10',
-          // Highlight
           isCurrentMatch && 'ring-2 ring-primary'
         )}
       >
-        {/* Sender name for non-own first messages */}
-        {/* {!isOwn && (position === 'first' || position === 'single') && user && (
-          <div className="text-[#4fae4e] text-sm font-medium mb-1">
-            {user.username}
-          </div>
-        )} */}
-
         <p className="text-font">
           {highlight && searchQuery
             ? highlightText(message.content, searchQuery)
@@ -557,8 +599,7 @@ const Message = ({
           <span
             className={cx(
               'text-[11px]',
-              isOwn ? 'text-[#71ab92]' : 'text-[#8d8d8d]'
-              // isOwn ? 'text-font-secondary' : 'text-font-subtle'
+              isOwn ? 'text-font-secondary' : 'text-font-subtle'
             )}
           >
             {new Date(message.createdAt).toLocaleTimeString(undefined, {
@@ -577,11 +618,11 @@ const Message = ({
 const MessageStatus = ({ status }: { status: MessageStatus }) => {
   switch (status) {
     case 'SENT':
-      return <BiCheck className="w-5 h-5 text-[#71ab92]" />;
+      return <BiCheck className="w-5 h-5 text-font-secondary" />;
     case 'DELIVERED':
       return (
         <div className="flex">
-          <BiCheckDouble className="w-5 h-5 text-[#71ab92]" />
+          <BiCheckDouble className="w-5 h-5 text-font-secondary" />
         </div>
       );
     case 'READ':

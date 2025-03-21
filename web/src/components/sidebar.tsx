@@ -245,7 +245,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
                     setIsSearchFocus(false);
                     setFocusedUserIndex(-1);
                   }}
-                  className="hover:bg-elevation rounded-full flex justify-center items-center p-[2px]"
+                  className="hover:bg-elevation-hover rounded-full flex justify-center items-center p-[2px]"
                   aria-label="Clear search"
                 >
                   <HiOutlineXMark className="size-4 text-icon-subtle" />
@@ -499,7 +499,7 @@ const SearchList = ({
                   e.preventDefault();
                   clearRecentSearches();
                 }}
-                className="p-1.5 rounded-full hover:bg-elevation transition-colors group"
+                className="p-1.5 rounded-full hover:bg-elevation-hover transition-colors group"
                 title="Clear recent searches"
                 aria-label="Clear recent searches"
               >
@@ -544,7 +544,7 @@ const UserListItem = ({
       'px-4 py-2 flex items-center space-x-3 cursor-pointer transition-colors',
       isActive
         ? 'bg-primary text-font-primary-contrast ring-2 ring-primary-light ring-opacity-75'
-        : 'text-font hover:bg-elevation'
+        : 'text-font hover:bg-elevation-hover'
     )}
     onMouseDown={onClick}
     role="option"
