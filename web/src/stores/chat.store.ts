@@ -350,8 +350,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     });
 
     // Handle heartbeat
-    socket.on('heartbeat', () => {
-      socket.emit('heartbeat-response');
+    socket.on(Events.HEARTBEAT, () => {
+      socket.emit(Events.HEARTBEAT_RESPONSE);
+    });
+
+    // Handle connection verification
+    socket.on(Events.CONNECTION_VERIFY, () => {
+      console.log('Received connection verification request from server');
+      socket.emit(Events.CONNECTION_VERIFY_RESPONSE);
     });
 
     return socket;

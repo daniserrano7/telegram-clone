@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DbModule } from './db/db.module';
 import { AuthModule } from './auth/auth.module';
 import { ChatModule } from './chat/chat.module';
@@ -13,6 +14,7 @@ import { UploadModule } from './upload/upload.module';
     ChatModule,
     UserModule,
     ConfigModule.forRoot(),
+    ScheduleModule.forRoot(),
     UploadModule,
   ],
   controllers: [],

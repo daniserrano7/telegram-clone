@@ -19,18 +19,23 @@ import { Events } from '@shared/gateway.dto';
 import { UserStatusService } from '../user/user-status.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
+const origins =
+  process.env.NODE_ENV === 'production'
+    ? ['http://localhost:3000', 'http://127.0.0.1:3000']
+    : '0.0.0.0:3000';
+
 @WebSocketGateway({
   cors: {
     methods: ['GET', 'POST'],
     credentials: true,
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', '0.0.0.0:3000'],
+    origin: origins,
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  private readonly heartbeatInterval = 15000; // 15 seconds
+  private readonly heartbeatInterval = 60000; // 1 minute
 
   constructor(
     private readonly userService: UserService,
@@ -53,7 +58,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Set up heartbeat interval for this client
       const interval = setInterval(() => {
-        client.emit('heartbeat');
+        client.emit(Events.HEARTBEAT);
       }, this.heartbeatInterval);
 
       // Store the interval reference in the socket data
@@ -101,11 +106,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('heartbeat-response')
+  @SubscribeMessage(Events.HEARTBEAT_RESPONSE)
   handleHeartbeat(@ConnectedSocket() client: Socket) {
     const userId = this.getUserIdFromSocket(client);
     if (userId) {
       this.userStatusService.updateHeartbeat(userId);
+    }
+  }
+
+  @SubscribeMessage(Events.CONNECTION_VERIFY_RESPONSE)
+  handleConnectionVerify(@ConnectedSocket() client: Socket) {
+    const userId = this.getUserIdFromSocket(client);
+    if (userId) {
+      // Connection is valid, update verification time
+      const connection = this.userStatusService.getUserConnection(userId);
+      if (connection) {
+        connection.lastVerified = new Date();
+      }
     }
   }
 

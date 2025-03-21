@@ -14,6 +14,10 @@ export const Events = {
   MESSAGE_STATUS_CHANGE: 'message-status-change',
   MESSAGE_DELIVERED: 'message-delivered',
   MESSAGE_READ: 'message-read',
+  HEARTBEAT: 'heartbeat',
+  HEARTBEAT_RESPONSE: 'heartbeat-response',
+  CONNECTION_VERIFY: 'connection-verify',
+  CONNECTION_VERIFY_RESPONSE: 'connection-verify-response',
 } as const;
 
 export type UserStatus = 'ONLINE' | 'OFFLINE';
