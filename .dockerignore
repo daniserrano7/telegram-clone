@@ -3,4 +3,10 @@ dist
 .git
 .env
 .env.*
-*.log 
+*.log
+.env
+.env.*
+.env-docker
+.env.example
+.env.local
+.env.dev

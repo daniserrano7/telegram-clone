@@ -15,7 +15,7 @@ import { UploadModule } from './upload/upload.module';
     UserModule,
     ConfigModule.forRoot({
       envFilePath:
-        process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.dev',
+        process.env.NODE_ENV === 'production' ? '.env.production' : '.env.dev',
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),

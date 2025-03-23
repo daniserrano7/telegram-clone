@@ -37,7 +37,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  private readonly heartbeatInterval = 60000; // 1 minute
+  private readonly heartbeatInterval = 60_000; // 1 minute
 
   constructor(
     private readonly userService: UserService,
@@ -128,7 +128,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @Cron(CronExpression.EVERY_5_SECONDS)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   handleStaleConnections() {
     this.userStatusService.checkStaleConnections();
   }

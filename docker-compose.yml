@@ -6,15 +6,21 @@ services:
     container_name: postgres_db
     restart: always
     environment:
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - '8000:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
       - app_network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   server:
     build:
@@ -27,12 +33,13 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
-      - PORT=5000
+      - PORT=${PORT}
     container_name: server
     ports:
-      - '8001:5000'
+      - '8001:${PORT}'
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app_network
 
@@ -47,7 +54,7 @@ services:
         VITE_PORT: ${VITE_PORT}
     container_name: web
     ports:
-      - '8002: 3000'
+      - '8002:${VITE_PORT}'
     depends_on:
       - server
     networks:
