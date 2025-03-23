@@ -292,6 +292,28 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
   );
 };
 
+const ChatListSkeleton = () => {
+  return (
+    <div className="flex-1 overflow-y-auto">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="p-4 flex items-center space-x-3">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full bg-elevation-hover animate-pulse" />
+            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-background-primary rounded-full bg-elevation-hover animate-pulse" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-center">
+              <div className="h-5 w-24 bg-elevation-hover rounded animate-pulse" />
+              <div className="h-4 w-16 bg-elevation-hover rounded animate-pulse" />
+            </div>
+            <div className="h-4 w-3/4 bg-elevation-hover rounded mt-1 animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const ChatList = ({
   onChatSelect,
   triggerSearch,
@@ -300,10 +322,15 @@ const ChatList = ({
   triggerSearch: (search: string) => void;
 }) => {
   const chats = useChatStore((state) => state.chats);
+  const isLoading = useChatStore((state) => state.isLoading);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const activeChat = useChatStore((state) => state.activeChat);
   const findPartner = useChatStore((state) => state.getChatPartner);
   const contacts = useUserStore((state) => state.contacts);
+
+  if (isLoading) {
+    return <ChatListSkeleton />;
+  }
 
   const formatLastMessage = (date: Date): string => {
     const today = new Date();

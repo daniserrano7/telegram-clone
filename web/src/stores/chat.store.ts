@@ -73,6 +73,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         chats.forEach((chat) => {
           socket.emit(Events.JOIN_CHAT, { chatId: chat.id });
         });
+      })
+      .finally(() => {
+        set({ isLoading: false });
       });
 
     set({ socket });
