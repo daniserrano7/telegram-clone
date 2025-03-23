@@ -38,6 +38,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   init: (user: User) => {
     if (get().isInit) return;
     set({ isInit: true });
+    set({ isLoading: true });
 
     if (!user) {
       console.error('User not found');

@@ -27,6 +27,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     if (get().isInit) return;
     set({ isInit: true });
 
+    console.log('env: ', import.meta.env.VITE_NODE_ENV);
+
     const userAuthString = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
 
     if (!userAuthString) {
