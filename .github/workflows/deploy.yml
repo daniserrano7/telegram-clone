@@ -1,0 +1,35 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main] # or your default branch name
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: |
+            DB_USER
+            DB_NAME
+            DB_PASSWORD
+            DATABASE_URL
+            JWT_SECRET
+            ALLOWED_ORIGINS
+            PORT
+            VITE_API_URL
+            VITE_WS_URL
+            VITE_PORT
+          script: |
+            cd ${{ secrets.VPS_APP_DIR }}
+            git pull origin main
+            ./run-prod.sh

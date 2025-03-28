@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - '5432:5432' # Only expose internally
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  server:
+    image: ${DOCKERHUB_USERNAME}/telegram-clone-server:latest
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - PORT=${PORT}
+    container_name: server
+    ports:
+      - '5000:5000' # Only expose internally
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  web:
+    image: ${DOCKERHUB_USERNAME}/telegram-clone-web:latest
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_WS_URL=${VITE_WS_URL}
+      - VITE_PORT=${VITE_PORT}
+    container_name: web
+    ports:
+      - '80:80' # Only expose internally
+    depends_on:
+      - server
+    networks:
+      - app_network
+    volumes:
+      - web_dist:/usr/share/nginx/html
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    volumes:
+      - ./.docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - web_dist:/usr/share/nginx/html
+    ports:
+      - '80:80'
+      - '443:443' # For HTTPS
+    depends_on:
+      - web
+      - server
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    name: app_network
+    driver: bridge
+volumes:
+  pgdata:
+  web_dist:
