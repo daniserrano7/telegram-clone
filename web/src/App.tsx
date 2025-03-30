@@ -4,14 +4,13 @@ import { useChatStore } from './stores/chat.store';
 import { useThemeStore } from './stores/theme.store';
 
 export const App = ({ children }: Props) => {
-  const { theme } = useThemeStore();
+  const { theme, accent } = useThemeStore();
   useAuthStore((state) => state.init());
 
   useEffect(() => {
-    theme === 'dark'
-      ? document.body.classList.add('dark')
-      : document.body.classList.remove('dark');
-  }, [theme]);
+    document.body.classList.add(`${theme}`);
+    document.body.classList.add(`accent-${accent}`);
+  }, []);
 
   () => {
     useChatStore.getState().cleanUp();
