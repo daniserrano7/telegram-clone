@@ -438,7 +438,7 @@ const MessageList = () => {
                     : 'hidden'
                 )}
               >
-                <div className="bg-[rgba(74,102,72,0.6)] dark:bg-[rgba(111,49,169,0.6)] text-white text-xs px-3 py-1 rounded-full">
+                <div className="bg-[rgba(74,102,72,0.6)] dark:bg-[rgba(24,37,51,0.8)] text-white text-xs px-3 py-1 rounded-full">
                   {new Date(message.createdAt).toLocaleDateString(undefined, {
                     month: 'long',
                     day: 'numeric',
@@ -567,7 +567,9 @@ const Message = ({
         className={cx(
           'max-w-[500px] group relative px-3 py-1 shadow-[0px_1px_2px_rgba(0,0,0,0.13)]',
           // Base styles
-          isOwn ? 'bg-background-chat-bubble' : 'bg-elevation',
+          isOwn
+            ? 'bg-background-chat-bubble'
+            : 'bg-background-chat-bubble-partner',
           // Border radius based on position and ownership
           isOwn &&
             position === 'single' &&

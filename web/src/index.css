@@ -122,7 +122,8 @@
   --color-background-primary-hover: #1e1e2d;
   --color-background-primary-active: #2a2a3c;
   --color-background-chat: #0f1620;
-  --color-background-chat-bubble: #8774e1;
+  --color-background-chat-bubble: #2b5378;
+  --color-background-chat-bubble-partner: #182533;
   --color-background-chat-gradient:
     radial-gradient(circle at bottom left, #ff69b4, transparent 55%),
     radial-gradient(circle at 80% 0%, #4169e1, transparent 55%),

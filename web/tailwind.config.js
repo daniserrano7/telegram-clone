@@ -21,6 +21,7 @@ export default {
           primary: 'var(--color-background-primary)',
           chat: 'var(--color-background-chat)',
           'chat-bubble': 'var(--color-background-chat-bubble)',
+          'chat-bubble-partner': 'var(--color-background-chat-bubble-partner)',
           hover: 'var(--color-background-primary-hover)',
           active: 'var(--color-background-primary-active)',
         },
