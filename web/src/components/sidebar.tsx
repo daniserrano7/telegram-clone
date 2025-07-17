@@ -14,6 +14,7 @@ import { useAuthStore } from 'src/stores/auth.store';
 import { SettingsPanel } from 'src/components/settings-panel';
 import { ProfileDialog } from 'src/components/profile-dialog';
 import { useUserStore } from 'src/stores/user.store';
+import { ThemeSettingsDialog } from './theme-settings-dialog';
 
 type ChatPreview = {
   id: UserId;
@@ -196,6 +197,11 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
       />
       {openSection === 'profile' ? (
         <ProfileDialog isOpen={true} onClose={() => setOpenSection(null)} />
+      ) : openSection === 'settings' ? (
+        <ThemeSettingsDialog
+          isOpen={true}
+          onClose={() => setOpenSection(null)}
+        />
       ) : null}
       <div className="px-4 flex-shrink-0 h-[64px] flex gap-3 items-center border-b border-border">
         <button onClick={() => setIsSettingsOpen(true)}>

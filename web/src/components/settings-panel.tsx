@@ -130,7 +130,12 @@ export const SettingsPanel = ({
               <HiOutlineUserCircle className="size-5 text-icon-subtle" />
               <span className="text-font">My Profile</span>
             </MenuItem>
-            <MenuItem>
+            <MenuItem
+              onClick={() => {
+                onClose();
+                openSection('settings');
+              }}
+            >
               <HiOutlineCog className="size-5 text-icon-subtle" />
               <span className="text-font">Settings</span>
             </MenuItem>

@@ -692,7 +692,7 @@ const MessageInput = () => {
           type="text"
           placeholder="Write a message..."
           autoFocus
-          className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-3 px-4 rounded-lg focus:outline focus:outline-2 focus:outline-input-border-active"
+          className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-3 px-4 rounded-lg focus:outline focus:outline-2 focus:ring-primary-light"
           onChange={(e) => {
             const chatId = activeChat.id;
             console.log('Message input changed', chatId);
