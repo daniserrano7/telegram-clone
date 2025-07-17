@@ -5,13 +5,13 @@ export type OnlineStatus = 'ONLINE' | 'OFFLINE';
 export interface User {
   id: UserId;
   username: string;
-  bio: string;
+  bio: string | null;
   onlineStatus: OnlineStatus;
   lastConnection: Date;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
-  avatarUrl: string;
+  avatarUrl: string | null;
 }
 
 export type GetUserRequestDto = {

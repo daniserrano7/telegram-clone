@@ -483,7 +483,7 @@ const Message = ({
   highlight?: boolean;
   searchQuery?: string;
   isCurrentMatch?: boolean;
-  user?: { username: string; avatarUrl?: string };
+  user?: { username: string; avatarUrl: string | null };
   position: 'single' | 'first' | 'middle' | 'last';
 }) => {
   const messageRef = useRef<HTMLDivElement>(null);
@@ -695,6 +695,7 @@ const MessageInput = () => {
           className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-3 px-4 rounded-lg focus:outline focus:outline-2 focus:outline-input-border-active"
           onChange={(e) => {
             const chatId = activeChat.id;
+            console.log('Message input changed', chatId);
 
             if (!chatId) return;
 

@@ -60,6 +60,6 @@ export const Avatar = ({ username, src, size = 48 }: AvatarProps) => {
 
 interface AvatarProps {
   username: string;
-  src?: string;
+  src: string | null;
   size?: number;
 }

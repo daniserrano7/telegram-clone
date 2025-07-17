@@ -3,12 +3,10 @@ import { RegisterRequestDto, LoginRequestDto } from '@shared/auth.dto';
 import { type User } from '@shared/user.dto';
 import { apiService } from '../services/api.service';
 import { useChatStore } from './chat.store';
-import { RECENT_SEARCHES_KEY } from 'src/hooks/useLocalStorage';
-
-interface UserAuth {
-  token: string;
-  user: User;
-}
+import {
+  localStorageService,
+  STORAGE_KEYS,
+} from '../services/local-storage.service';
 
 interface AuthStore {
   init: () => void;
@@ -20,23 +18,27 @@ interface AuthStore {
   login: (credentials: LoginRequestDto) => Promise<User>;
   logout: () => void;
 }
-const LOCAL_STORAGE_USER_KEY = 'user';
+const LOCAL_STORAGE_USER_KEY = STORAGE_KEYS.USER_AUTH;
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   init: () => {
-    if (get().isInit) return;
+    if (get().isInit) {
+      console.log('Auth store already initialized');
+      return;
+    }
+
     set({ isInit: true });
 
     console.log('env: ', import.meta.env.VITE_NODE_ENV);
 
-    const userAuthString = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
+    const userAuth = localStorageService.get(LOCAL_STORAGE_USER_KEY);
 
-    if (!userAuthString) {
-      console.error('No user auth found');
+    if (!userAuth) {
+      console.info('No user auth found');
       return;
     }
 
-    const { token, user } = JSON.parse(userAuthString) as UserAuth;
+    const { token, user } = userAuth;
     apiService.setToken(token);
 
     set({ token, user, isLogged: true });
@@ -46,10 +48,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (res.status === 'success') {
         set({ user: res.data });
 
-        localStorage.setItem(
-          LOCAL_STORAGE_USER_KEY,
-          JSON.stringify({ user: res.data, token })
-        );
+        localStorageService.set(LOCAL_STORAGE_USER_KEY, {
+          user: res.data,
+          token,
+        });
       }
     });
   },
@@ -75,10 +77,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       token,
       isLogged: true,
     });
-    localStorage.setItem(
-      LOCAL_STORAGE_USER_KEY,
-      JSON.stringify({ user, token })
-    );
+    localStorageService.set(LOCAL_STORAGE_USER_KEY, { user, token });
 
     useChatStore.getState().init(user);
     return user;
@@ -97,10 +96,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       token,
       isLogged: true,
     });
-    localStorage.setItem(
-      LOCAL_STORAGE_USER_KEY,
-      JSON.stringify({ user, token })
-    );
+    console.log('login', { user, token });
+    localStorageService.set(LOCAL_STORAGE_USER_KEY, { user, token });
 
     useChatStore.getState().init(user);
     return user;
@@ -108,7 +105,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   logout: () => {
     set({ token: '', user: null, isLogged: false });
     useChatStore.getState().cleanUp();
-    localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
-    localStorage.removeItem(RECENT_SEARCHES_KEY);
+    localStorageService.remove(LOCAL_STORAGE_USER_KEY);
+    localStorageService.remove(STORAGE_KEYS.RECENT_SEARCHES);
   },
 }));

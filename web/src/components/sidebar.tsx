@@ -1,10 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import cx from 'classix';
 import { type UserId } from '@shared/user.dto';
-import {
-  useLocalStorage,
-  RECENT_SEARCHES_KEY,
-} from 'src/hooks/useLocalStorage';
+import { useRecentSearches } from 'src/hooks/useLocalStorageService';
 import { Avatar } from 'src/components/avatar';
 import {
   HiOutlineXMark,
@@ -22,13 +19,13 @@ type ChatPreview = {
   id: UserId;
   name: string;
   description: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
 };
 
 type SearchUser = {
   id: number;
   username: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
   lastSearched: Date;
 };
 
@@ -41,10 +38,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
   const [search, setSearch] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [foundUsers, setFoundUsers] = useState<ChatPreview[]>([]);
-  const [recentSearches, setRecentSearches] = useLocalStorage<SearchUser[]>(
-    RECENT_SEARCHES_KEY,
-    []
-  );
+  const [recentSearches, setRecentSearches] = useRecentSearches();
   const [focusedUserIndex, setFocusedUserIndex] = useState<number>(-1);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const userListRef = useRef<HTMLDivElement>(null);
@@ -79,7 +73,9 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
         id: user.id,
         name: user.username,
         avatarUrl: user.avatarUrl,
-        description: `Last searched ${new Date(user.lastSearched).toLocaleDateString()}`,
+        description: `Last searched ${new Date(
+          user.lastSearched
+        ).toLocaleDateString()}`,
       }));
     }
   };
@@ -98,7 +94,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
                 id: u.id,
                 name: u.username,
                 description: '',
-                avatarUrl: u.avatarUrl,
+                avatarUrl: u.avatarUrl || null,
               }))
           );
         }
@@ -114,7 +110,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
   const handleUserSelect = (
     userId: number,
     username: string,
-    avatarUrl: string
+    avatarUrl: string | null
   ) => {
     const newRecent = [
       { id: userId, username, lastSearched: new Date(), avatarUrl },
@@ -480,7 +476,11 @@ const SearchList = ({
   foundUsers: ChatPreview[];
   recentSearches: SearchUser[];
   clearRecentSearches: () => void;
-  onUserSelect: (userId: number, username: string, avatarUrl: string) => void;
+  onUserSelect: (
+    userId: number,
+    username: string,
+    avatarUrl: string | null
+  ) => void;
   focusedUserIndex: number;
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   listRef: React.RefObject<HTMLDivElement>;
@@ -495,7 +495,9 @@ const SearchList = ({
         id: user.id,
         name: user.username,
         avatarUrl: user.avatarUrl,
-        description: `Last searched ${new Date(user.lastSearched).toLocaleDateString()}`,
+        description: `Last searched ${new Date(
+          user.lastSearched
+        ).toLocaleDateString()}`,
       }));
 
   return (
