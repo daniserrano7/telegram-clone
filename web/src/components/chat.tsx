@@ -502,12 +502,18 @@ const Message = ({
   const handleMessageVisible = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const [entry] = entries;
+      const isEntryIntersecting = entry.isIntersecting;
+      const isMessageNotRead = message.status !== 'READ';
+      const isMessageNotOwn = !isOwn;
+      const isSocketConnected = socketService.isConnected();
+      const isMessageNotAlreadyRead = !wasReadRef.current;
+
       if (
-        entry.isIntersecting &&
-        !isOwn &&
-        message.status !== 'READ' &&
-        !wasReadRef.current &&
-        socketService.isConnected()
+        isEntryIntersecting &&
+        isMessageNotRead &&
+        isMessageNotOwn &&
+        isMessageNotAlreadyRead &&
+        isSocketConnected
       ) {
         wasReadRef.current = true;
         socketService.emit(Events.MESSAGE_READ, { messageId: message.id });

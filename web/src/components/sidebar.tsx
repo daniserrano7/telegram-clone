@@ -39,10 +39,10 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
   const [search, setSearch] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [foundUsers, setFoundUsers] = useState<ChatPreview[]>([]);
-  const [recentSearches, setRecentSearches] = useRecentSearches();
   const [focusedUserIndex, setFocusedUserIndex] = useState<number>(-1);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const userListRef = useRef<HTMLDivElement>(null);
+  const [recentSearches, setRecentSearches] = useRecentSearches();
   const openChatWithUser = useChatStore((state) => state.openChatWithUser);
   const user = useAuthStore((state) => state.user);
 
