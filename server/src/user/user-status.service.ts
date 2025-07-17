@@ -57,6 +57,9 @@ export class UserStatusService implements OnModuleInit {
       // Broadcast status change to other users
       this.broadcastStatusChange(userId, 'ONLINE');
 
+      // Send current online status of all other users to the newly connected user
+      this.sendCurrentOnlineStatusToUser(userId, socketId);
+
       return true;
     } catch (error) {
       console.error(`Error handling user ${userId} connection:`, error);
@@ -243,5 +246,26 @@ export class UserStatusService implements OnModuleInit {
       status,
       timestamp: new Date(),
     });
+  }
+
+  /**
+   * Send current online status of all other users to a newly connected user
+   */
+  private sendCurrentOnlineStatusToUser(userId: number, socketId: string) {
+    if (!this.server) return;
+
+    console.log(`Sending current online status to user ${userId}`);
+    
+    // Send status of all currently online users to the newly connected user
+    for (const [onlineUserId] of this.onlineUsers.entries()) {
+      // Don't send the user their own status
+      if (onlineUserId !== userId) {
+        this.server.to(socketId).emit(Events.USER_STATUS_CHANGE, {
+          userId: onlineUserId,
+          status: 'ONLINE',
+          timestamp: new Date(),
+        });
+      }
+    }
   }
 }
