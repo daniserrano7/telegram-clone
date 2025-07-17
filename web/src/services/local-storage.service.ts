@@ -161,7 +161,6 @@ export class LocalStorageService {
       }
 
       const serialized = this.stringifyJSON(result.data);
-      console.log('serialized', serialized);
       localStorage.setItem(key, serialized);
       return true;
     } catch (error) {

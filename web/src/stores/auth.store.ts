@@ -29,8 +29,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     set({ isInit: true });
 
-    console.log('env: ', import.meta.env.VITE_NODE_ENV);
-
     const userAuth = localStorageService.get(LOCAL_STORAGE_USER_KEY);
 
     if (!userAuth) {
@@ -96,7 +94,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       token,
       isLogged: true,
     });
-    console.log('login', { user, token });
     localStorageService.set(LOCAL_STORAGE_USER_KEY, { user, token });
 
     useChatStore.getState().init(user);
