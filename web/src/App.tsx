@@ -1,20 +1,26 @@
 import { useEffect } from 'react';
-import { useAuthStore } from './stores/auth.store';
-import { useChatStore } from './stores/chat.store';
-import { useThemeStore } from './stores/theme.store';
+import { useAppStore } from './stores/app.store';
 
 export const App = ({ children }: Props) => {
-  const { theme, accent } = useThemeStore();
-  useAuthStore((state) => state.init());
+  const { init, status, cleanUp } = useAppStore();
 
   useEffect(() => {
-    document.body.classList.add(`${theme}`);
-    document.body.classList.add(`accent-${accent}`);
+    init();
+
+    return () => {
+      cleanUp();
+    };
   }, []);
 
-  () => {
-    useChatStore.getState().cleanUp();
-  };
+  // TODO: Add a loading screen
+  if (status === 'not-init' || status === 'initializing') {
+    return <div>Loading...</div>;
+  }
+
+  // TODO: Add an error screen
+  if (status === 'error') {
+    return <div>Error</div>;
+  }
 
   return (
     <div className="w-full h-screen text-font-primary bg-background-primary">
