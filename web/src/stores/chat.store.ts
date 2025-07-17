@@ -47,10 +47,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       const socket = get().initializeSocket(user);
 
-      const contactsResult = await apiService.getContacts(user.id);
+      const [contactsResult, chatsResult] = await Promise.all([
+        apiService.getContacts(user.id),
+        apiService.getChats(user.id),
+      ]);
 
       if (contactsResult.status === 'error') {
         console.error('Failed to fetch contacts', contactsResult.errorMsg);
+        return;
+      }
+
+      if (chatsResult.status === 'error') {
+        console.error('Failed to fetch chats', chatsResult.errorMsg);
         return;
       }
 
@@ -58,13 +66,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       contacts.forEach((contact) => {
         useUserStore.getState().contacts[contact.id] = contact;
       });
-
-      const chatsResult = await apiService.getChats(user.id);
-
-      if (chatsResult.status === 'error') {
-        console.error('Failed to fetch chats', chatsResult.errorMsg);
-        return;
-      }
 
       const chats = chatsResult.data;
       set({ chats });
