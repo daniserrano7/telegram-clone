@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { useThemeStore } from './theme.store';
 import { useAuthStore } from './auth.store';
 import { useChatStore } from './chat.store';
 
@@ -22,11 +21,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ status: 'initializing' });
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const { theme, accent } = useThemeStore.getState();
-    document.body.classList.add(theme);
-    document.body.classList.add(`accent-${accent}`);
-
-    useAuthStore.getState().init();
+    await useAuthStore.getState().init();
 
     set({ status: 'ready' });
   },

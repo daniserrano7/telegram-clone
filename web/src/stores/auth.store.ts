@@ -21,37 +21,40 @@ interface AuthStore {
 const LOCAL_STORAGE_USER_KEY = STORAGE_KEYS.USER_AUTH;
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
-  init: () => {
-    if (get().isInit) {
-      console.log('Auth store already initialized');
-      return;
-    }
-
-    set({ isInit: true });
-
-    const userAuth = localStorageService.get(LOCAL_STORAGE_USER_KEY);
-
-    if (!userAuth) {
-      console.info('No user auth found');
-      return;
-    }
-
-    const { token, user } = userAuth;
-    apiService.setToken(token);
-
-    set({ token, user, isLogged: true });
-    useChatStore.getState().init(user);
-
-    apiService.getUser(user.id).then((res) => {
-      if (res.status === 'success') {
-        set({ user: res.data });
-
-        localStorageService.set(LOCAL_STORAGE_USER_KEY, {
-          user: res.data,
-          token,
-        });
+  init: async () => {
+    try {
+      if (get().isInit) {
+        console.log('Auth store already initialized');
+        return;
       }
-    });
+
+      set({ isInit: true });
+
+      const userAuth = localStorageService.get(LOCAL_STORAGE_USER_KEY);
+
+      if (!userAuth) {
+        console.info('No user auth found');
+        return;
+      }
+
+      const { token, user } = userAuth;
+      apiService.setToken(token);
+
+      set({ token, user, isLogged: true });
+
+      const userData = await apiService.getUser(user.id);
+
+      if (userData.status === 'error') {
+        console.error('Failed to fetch user data', userData.errorMsg);
+        return;
+      }
+
+      set({ user: userData.data });
+
+      await useChatStore.getState().init(user);
+    } catch (e) {
+      console.error('Failed to initialize auth store', e);
+    }
   },
   user: null,
   isInit: false,
@@ -96,7 +99,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
     localStorageService.set(LOCAL_STORAGE_USER_KEY, { user, token });
 
-    useChatStore.getState().init(user);
+    await useChatStore.getState().init(user);
     return user;
   },
   logout: () => {

@@ -1,5 +1,8 @@
 import { create } from 'zustand';
-import { localStorageService, STORAGE_KEYS } from '../services/local-storage.service';
+import {
+  localStorageService,
+  STORAGE_KEYS,
+} from '../services/local-storage.service';
 
 export type Theme = 'light' | 'dark';
 export type Accent = 'blue' | 'red' | 'green' | 'yellow' | 'purple' | 'orange';
@@ -18,6 +21,9 @@ export const useThemeStore = create<ThemeState>((set, get) => {
   const initialTheme = savedTheme?.theme || 'light';
   const initialAccent = savedTheme?.accent || 'blue';
 
+  document.body.classList.add(initialTheme);
+  document.body.classList.add(`accent-${initialAccent}`);
+
   return {
     theme: initialTheme,
     accent: initialAccent,
@@ -32,10 +38,13 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       document.body.classList.add(`${newTheme}`);
       document.body.classList.remove(`${currentTheme}`);
       set({ theme: newTheme });
-      
+
       // Save to localStorage
       const { accent } = get();
-      localStorageService.set(STORAGE_KEYS.THEME_SETTINGS, { theme: newTheme, accent });
+      localStorageService.set(STORAGE_KEYS.THEME_SETTINGS, {
+        theme: newTheme,
+        accent,
+      });
     },
     setAccent: (newAccent) => {
       const currentAccent = get().accent;
@@ -44,10 +53,13 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       document.body.classList.add(`accent-${newAccent}`);
       document.body.classList.remove(`accent-${currentAccent}`);
       set({ accent: newAccent });
-      
+
       // Save to localStorage
       const { theme } = get();
-      localStorageService.set(STORAGE_KEYS.THEME_SETTINGS, { theme, accent: newAccent });
+      localStorageService.set(STORAGE_KEYS.THEME_SETTINGS, {
+        theme,
+        accent: newAccent,
+      });
     },
   };
 });

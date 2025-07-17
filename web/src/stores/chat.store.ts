@@ -17,7 +17,7 @@ interface Chat {
 type ActiveChat = Omit<Chat, 'id'> & { id?: number };
 
 interface ChatStore {
-  init: (user: User) => void;
+  init: (user: User) => Promise<void>;
   cleanUp: () => void;
   isInit: boolean;
   socket: Socket | null;
@@ -35,51 +35,50 @@ interface ChatStore {
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
-  init: (user: User) => {
-    if (get().isInit) return;
-    set({ isInit: true });
-    set({ isLoading: true });
+  init: async (user: User) => {
+    try {
+      if (get().isInit) return;
+      set({ isInit: true, isLoading: true });
 
-    if (!user) {
-      console.error('User not found');
-      return;
-    }
+      if (!user) {
+        console.error('User not found');
+        return;
+      }
 
-    const socket = get().initializeSocket(user);
+      const socket = get().initializeSocket(user);
 
-    apiService
-      .getContacts(user.id)
-      .then((result) => {
-        if (result.status === 'error') {
-          console.error('Failed to fetch contacts', result.errorMsg);
-          return;
-        }
+      const contactsResult = await apiService.getContacts(user.id);
 
-        const contacts = result.data;
-        contacts.forEach((contact) => {
-          useUserStore.getState().contacts[contact.id] = contact;
-        });
-      })
-      .then(() => apiService.getChats(user.id))
-      .then((result) => {
-        if (result.status === 'error') {
-          console.error('Failed to fetch chats', result.errorMsg);
-          return;
-        }
+      if (contactsResult.status === 'error') {
+        console.error('Failed to fetch contacts', contactsResult.errorMsg);
+        return;
+      }
 
-        const chats = result.data;
-        set({ chats });
-
-        // Join all chat rooms
-        chats.forEach((chat) => {
-          socket.emit(Events.JOIN_CHAT, { chatId: chat.id });
-        });
-      })
-      .finally(() => {
-        set({ isLoading: false });
+      const contacts = contactsResult.data;
+      contacts.forEach((contact) => {
+        useUserStore.getState().contacts[contact.id] = contact;
       });
 
-    set({ socket });
+      const chatsResult = await apiService.getChats(user.id);
+
+      if (chatsResult.status === 'error') {
+        console.error('Failed to fetch chats', chatsResult.errorMsg);
+        return;
+      }
+
+      const chats = chatsResult.data;
+      set({ chats });
+
+      chats.forEach((chat) => {
+        socket.emit(Events.JOIN_CHAT, { chatId: chat.id });
+      });
+
+      set({ socket });
+    } catch (e) {
+      console.error('Failed to initialize chat store', e);
+    } finally {
+      set({ isLoading: false });
+    }
   },
   cleanUp: () => {
     const socket = get().socket;
