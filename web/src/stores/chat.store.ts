@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { io, Socket } from 'socket.io-client';
 import { CreateChatRequestDto, Message } from '@shared/chat.dto';
 import { User } from '@shared/user.dto';
 import { Events, UserStatus } from '@shared/gateway.dto';
 import { apiService } from '../services/api.service';
+import { socketService } from '../services/socket.service';
 import { useAuthStore } from './auth.store';
 import { useUserStore } from './user.store';
 
@@ -20,7 +20,6 @@ interface ChatStore {
   init: (user: User) => Promise<void>;
   cleanUp: () => void;
   isInit: boolean;
-  socket: Socket | null;
   isLoading: boolean;
   errorMsg: string;
   chats: Chat[];
@@ -31,21 +30,15 @@ interface ChatStore {
   setActiveChat: (chat: ActiveChat) => void;
   openChatWithUser: (userId: number) => void;
   getChatPartner: (chat: ActiveChat) => User | undefined;
-  initializeSocket: (user: User) => Socket;
+  registerEvents: (user: User) => void;
 }
 
 export const useChatStore = create<ChatStore>((set, get) => ({
   init: async (user: User) => {
     try {
-      if (get().isInit) return;
       set({ isInit: true, isLoading: true });
 
-      if (!user) {
-        console.error('User not found');
-        return;
-      }
-
-      const socket = get().initializeSocket(user);
+      get().registerEvents(user);
 
       const [contactsResult, chatsResult] = await Promise.all([
         apiService.getContacts(user.id),
@@ -71,10 +64,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       set({ chats });
 
       chats.forEach((chat) => {
-        socket.emit(Events.JOIN_CHAT, { chatId: chat.id });
+        socketService.emit(Events.JOIN_CHAT, { chatId: chat.id });
       });
-
-      set({ socket });
     } catch (e) {
       console.error('Failed to initialize chat store', e);
     } finally {
@@ -82,18 +73,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }
   },
   cleanUp: () => {
-    const socket = get().socket;
-
-    if (socket) {
-      socket.emit(Events.LEAVE_USER, {
+    if (socketService.isConnected()) {
+      socketService.emit(Events.LEAVE_USER, {
         userId: useAuthStore.getState().user?.id,
       });
-      socket.disconnect();
+      socketService.disconnect();
     }
 
     set({
       isInit: false,
-      socket: null,
       isLoading: false,
       errorMsg: '',
       chats: [],
@@ -101,7 +89,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     });
   },
   isInit: false,
-  socket: null,
   isLoading: false,
   errorMsg: '',
   chats: [],
@@ -165,14 +152,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   sendMessage: async (chatId: number, content: string) => {
     if (!content) return;
 
-    const socket = get().socket;
-
-    if (!socket) {
+    if (!socketService.isConnected()) {
       console.error('Socket not initialized');
       return;
     }
 
-    socket.emit(
+    socketService.emit(
       Events.SEND_MESSAGE,
       { chatId, content },
       (result: { status: 'success' | 'error'; message: Message }) => {
@@ -205,7 +190,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           result.status === 'success' &&
           result.message.senderId !== useAuthStore.getState().user?.id
         ) {
-          socket.emit(Events.MESSAGE_DELIVERED, {
+          socketService.emit(Events.MESSAGE_DELIVERED, {
             messageId: result.message.id,
           });
         }
@@ -256,45 +241,46 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     const userId = useAuthStore.getState().user?.id;
     return chat.members.find((member) => member.id !== userId);
   },
-  initializeSocket: (user: User) => {
-    const socketUrl = import.meta.env.VITE_WS_URL;
-    console.log('socketUrl', socketUrl);
-    const socket = io(socketUrl, {
-      auth: {
-        token: useAuthStore.getState().token,
-      },
-    });
-
+  registerEvents: (user: User) => {
     // Listen for message status changes
-    socket.on(Events.MESSAGE_STATUS_CHANGE, ({ messageId, status }) => {
-      set({
-        chats: get().chats.map((chat) => ({
-          ...chat,
-          messages: chat.messages.map((msg) =>
-            msg.id === messageId ? { ...msg, status } : msg
-          ),
-        })),
-        activeChat: get().activeChat
-          ? {
-              ...get().activeChat,
-              members: get().activeChat?.members || [],
-              messages:
-                get().activeChat?.messages.map((msg) =>
-                  msg.id === messageId ? { ...msg, status } : msg
-                ) || [],
-            }
-          : null,
-      });
-    });
+    socketService.on(
+      Events.MESSAGE_STATUS_CHANGE,
+      ({
+        messageId,
+        status,
+      }: {
+        messageId: number;
+        status: Message['status'];
+      }) => {
+        set({
+          chats: get().chats.map((chat) => ({
+            ...chat,
+            messages: chat.messages.map((msg) =>
+              msg.id === messageId ? { ...msg, status } : msg
+            ),
+          })),
+          activeChat: get().activeChat
+            ? {
+                ...get().activeChat,
+                members: get().activeChat?.members || [],
+                messages:
+                  get().activeChat?.messages.map((msg) =>
+                    msg.id === messageId ? { ...msg, status } : msg
+                  ) || [],
+              }
+            : null,
+        });
+      }
+    );
 
     // Listen for new chats
-    socket.on(Events.NEW_CHAT, (chatId) => {
+    socketService.on(Events.NEW_CHAT, (chatId: number) => {
       get().fetchChat(chatId);
-      socket.emit(Events.JOIN_CHAT, chatId);
+      socketService.emit(Events.JOIN_CHAT, chatId);
     });
 
     // Listen for incoming messages
-    socket.on(Events.MESSAGE, (message: Message) => {
+    socketService.on(Events.MESSAGE, (message: Message) => {
       if (message.senderId === user.id) return;
 
       // Update chats with new message
@@ -319,11 +305,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       });
 
       // Automatically emit DELIVERED status for received messages
-      socket.emit(Events.MESSAGE_DELIVERED, { messageId: message.id });
+      socketService.emit(Events.MESSAGE_DELIVERED, { messageId: message.id });
     });
 
     // Listen for user status changes
-    socket.on(
+    socketService.on(
       Events.USER_STATUS_CHANGE,
       ({
         userId,
@@ -349,21 +335,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     );
 
     // Listen for user typing events
-    socket.on(Events.USER_TYPING, ({ userId, chatId, isTyping }) => {
+    socketService.on(Events.USER_TYPING, ({ userId, chatId, isTyping }) => {
       useUserStore.getState().updateTypingStatus(userId, chatId, isTyping);
     });
 
-    // Handle heartbeat
-    socket.on(Events.HEARTBEAT, () => {
-      socket.emit(Events.HEARTBEAT_RESPONSE);
+    // Handle heartbeat (additional safety although service already does)
+    socketService.on(Events.HEARTBEAT, () => {
+      socketService.emit(Events.HEARTBEAT_RESPONSE);
     });
 
     // Handle connection verification
-    socket.on(Events.CONNECTION_VERIFY, () => {
+    socketService.on(Events.CONNECTION_VERIFY, () => {
       console.log('Received connection verification request from server');
-      socket.emit(Events.CONNECTION_VERIFY_RESPONSE);
+      socketService.emit(Events.CONNECTION_VERIFY_RESPONSE);
     });
-
-    return socket;
   },
 }));

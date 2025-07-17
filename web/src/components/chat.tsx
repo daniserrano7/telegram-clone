@@ -20,6 +20,7 @@ import { ProfileDialog } from './profile-dialog';
 import { Avatar } from './avatar';
 import { useSearchStore } from 'src/stores/search.store';
 import { formatLastActive } from 'src/utils/date';
+import { socketService } from '../services/socket.service';
 
 export const Chat = ({
   toggleChatInfo,
@@ -487,7 +488,6 @@ const Message = ({
   position: 'single' | 'first' | 'middle' | 'last';
 }) => {
   const messageRef = useRef<HTMLDivElement>(null);
-  const socket = useChatStore((state) => state.socket);
   const wasReadRef = useRef(false);
 
   useEffect(() => {
@@ -507,13 +507,13 @@ const Message = ({
         !isOwn &&
         message.status !== 'READ' &&
         !wasReadRef.current &&
-        socket
+        socketService.isConnected()
       ) {
         wasReadRef.current = true;
-        socket.emit(Events.MESSAGE_READ, { messageId: message.id });
+        socketService.emit(Events.MESSAGE_READ, { messageId: message.id });
       }
     },
-    [message.id, isOwn, message.status, socket]
+    [message.id, isOwn, message.status]
   );
 
   useEffect(() => {

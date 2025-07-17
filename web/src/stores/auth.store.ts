@@ -7,6 +7,7 @@ import {
   localStorageService,
   STORAGE_KEYS,
 } from '../services/local-storage.service';
+import { socketService } from '../services/socket.service';
 
 interface AuthStore {
   init: () => void;
@@ -51,6 +52,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       set({ user: userData.data });
 
+      await socketService.init(token);
       await useChatStore.getState().init(user);
     } catch (e) {
       console.error('Failed to initialize auth store', e);
@@ -99,6 +101,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
     localStorageService.set(LOCAL_STORAGE_USER_KEY, { user, token });
 
+    await socketService.init(token);
     await useChatStore.getState().init(user);
     return user;
   },
