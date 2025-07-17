@@ -5,7 +5,7 @@ import { Events, UserStatus } from '@shared/gateway.dto';
 import { apiService } from '../services/api.service';
 import { socketService } from '../services/socket.service';
 import { useAuthStore } from './auth.store';
-import { useUserStore } from './user.store';
+import { useContactsStore } from './contacts.store';
 
 interface Chat {
   id: number;
@@ -57,7 +57,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       const contacts = contactsResult.data;
       contacts.forEach((contact) => {
-        useUserStore.getState().contacts[contact.id] = contact;
+        useContactsStore.getState().contacts[contact.id] = contact;
       });
 
       const chats = chatsResult.data;
@@ -320,8 +320,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         status: UserStatus;
         timestamp: string | Date;
       }) => {
-        const contacts = useUserStore.getState().contacts;
-        useUserStore.setState({
+        const contacts = useContactsStore.getState().contacts;
+        useContactsStore.setState({
           contacts: {
             ...contacts,
             [userId]: {
@@ -336,7 +336,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     // Listen for user typing events
     socketService.on(Events.USER_TYPING, ({ userId, chatId, isTyping }) => {
-      useUserStore.getState().updateTypingStatus(userId, chatId, isTyping);
+      useContactsStore.getState().updateTypingStatus(userId, chatId, isTyping);
     });
 
     // Handle heartbeat (additional safety although service already does)

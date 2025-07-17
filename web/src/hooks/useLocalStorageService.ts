@@ -3,7 +3,6 @@ import {
   localStorageService,
   STORAGE_KEYS,
   type SearchUser,
-  type ThemeSettings,
 } from '../services/local-storage.service';
 
 /**

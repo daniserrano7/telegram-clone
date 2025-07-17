@@ -1,10 +1,9 @@
 import { create } from 'zustand';
-import { type Socket } from 'socket.io-client';
 import { Events } from '@shared/gateway.dto';
 import { type OnlineStatus } from '@shared/user.dto';
 import { socketService } from '../services/socket.service';
 
-interface UserStatusInfo {
+interface ContactStatusInfo {
   status: OnlineStatus;
   lastActive: Date | null;
   typing: {
@@ -13,12 +12,10 @@ interface UserStatusInfo {
   };
 }
 
-interface UserState {
-  userStatuses: Map<number, UserStatusInfo>;
+interface ContactsState {
+  contactsStatuses: Map<number, ContactStatusInfo>;
   contacts: Record<number, any>;
-  socket: Socket | null;
-  init: (socket: Socket) => void;
-  updateUserStatus: (
+  updateContactStatus: (
     userId: number,
     status: OnlineStatus,
     lastActive: Date
@@ -31,43 +28,39 @@ interface UserState {
   emitTypingStatus: (chatId: number, isTyping: boolean) => void;
 }
 
-export const useUserStore = create<UserState>((set, get) => ({
-  userStatuses: new Map(),
+export const useContactsStore = create<ContactsState>((set, get) => ({
+  contactsStatuses: new Map(),
   contacts: {},
-  socket: null,
-  init: (socket) => {
-    set({ socket });
-  },
-  updateUserStatus: (userId, status, lastActive) => {
-    const userStatuses = get().userStatuses;
-    const currentStatus = userStatuses.get(userId) || {
+  updateContactStatus: (userId, status, lastActive) => {
+    const contactsStatuses = get().contactsStatuses;
+    const currentStatus = contactsStatuses.get(userId) || {
       status: 'OFFLINE',
       lastActive: null,
       typing: { chatId: 0, isTyping: false },
     };
 
-    userStatuses.set(userId, {
+    contactsStatuses.set(userId, {
       ...currentStatus,
       status,
       lastActive,
     });
 
-    set({ userStatuses: new Map(userStatuses) });
+    set({ contactsStatuses: new Map(contactsStatuses) });
   },
   updateTypingStatus: (userId, chatId, isTyping) => {
-    const userStatuses = get().userStatuses;
-    const currentStatus = userStatuses.get(userId) || {
+    const contactsStatuses = get().contactsStatuses;
+    const currentStatus = contactsStatuses.get(userId) || {
       status: 'OFFLINE',
       lastActive: null,
       typing: { chatId: 0, isTyping: false },
     };
 
-    userStatuses.set(userId, {
+    contactsStatuses.set(userId, {
       ...currentStatus,
       typing: { chatId, isTyping },
     });
 
-    set({ userStatuses: new Map(userStatuses) });
+    set({ contactsStatuses: new Map(contactsStatuses) });
   },
   emitTypingStatus: (chatId, isTyping) => {
     if (!socketService.isConnected()) return;

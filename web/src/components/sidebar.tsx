@@ -13,7 +13,7 @@ import { useChatStore } from 'src/stores/chat.store';
 import { useAuthStore } from 'src/stores/auth.store';
 import { SettingsPanel } from 'src/components/settings-panel';
 import { ProfileDialog } from 'src/components/profile-dialog';
-import { useUserStore } from 'src/stores/user.store';
+import { useContactsStore } from 'src/stores/contacts.store';
 import { ThemeSettingsDialog } from './theme-settings-dialog';
 
 type ChatPreview = {
@@ -328,7 +328,7 @@ const ChatList = ({
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const activeChat = useChatStore((state) => state.activeChat);
   const findPartner = useChatStore((state) => state.getChatPartner);
-  const contacts = useUserStore((state) => state.contacts);
+  const contacts = useContactsStore((state) => state.contacts);
 
   if (isLoading) {
     return <ChatListSkeleton />;

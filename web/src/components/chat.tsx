@@ -9,7 +9,7 @@ import {
 import cx from 'classix';
 import { IoSendSharp } from 'react-icons/io5';
 import { BiCheck, BiCheckDouble } from 'react-icons/bi';
-import { useUserStore } from 'src/stores/user.store';
+import { useContactsStore } from 'src/stores/contacts.store';
 import { useAuthStore } from 'src/stores/auth.store';
 import { useChatStore } from 'src/stores/chat.store';
 import { useThemeStore } from 'src/stores/theme.store';
@@ -206,13 +206,13 @@ const ChatHeader = ({
   const activeChat = useChatStore((state) => state.activeChat);
   const getChatPartner = useChatStore((state) => state.getChatPartner);
   const partner = activeChat ? getChatPartner(activeChat) : null;
-  const contacts = useUserStore((state) => state.contacts);
+  const contacts = useContactsStore((state) => state.contacts);
   const isOnline = partner
     ? contacts[partner.id]?.onlineStatus === 'ONLINE'
     : false;
   const lastConnection = partner ? contacts[partner.id]?.lastConnection : null;
-  const userStatuses = useUserStore((state) => state.userStatuses);
-  const typingStatus = userStatuses.get(partner?.id || 0)?.typing;
+  const contactsStatuses = useContactsStore((state) => state.contactsStatuses);
+  const typingStatus = contactsStatuses.get(partner?.id || 0)?.typing;
   const isTyping = typingStatus
     ? typingStatus.isTyping && typingStatus.chatId === activeChat?.id
     : false;
@@ -651,7 +651,7 @@ const MessageInput = () => {
   const activeChat = useChatStore((state) => state.activeChat);
   const sendMessage = useChatStore((state) => state.sendMessage);
   const createChat = useChatStore((state) => state.createChat);
-  const emitTypingStatus = useUserStore((state) => state.emitTypingStatus);
+  const emitTypingStatus = useContactsStore((state) => state.emitTypingStatus);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
