@@ -235,7 +235,7 @@ const ChatHeader = ({
   if (!activeChat || !partner) return null;
 
   const getStatusText = () => {
-    if (isTyping) return 'typing...';
+    if (isTyping) return 'Typing...';
     if (isOnline) return 'Online';
     if (lastConnection) {
       return `Last seen ${formatLastActive(lastConnection)}`;

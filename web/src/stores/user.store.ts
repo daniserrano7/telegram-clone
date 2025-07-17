@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { type Socket } from 'socket.io-client';
 import { Events } from '@shared/gateway.dto';
 import { type OnlineStatus } from '@shared/user.dto';
+import { useChatStore } from './chat.store';
 
 interface UserStatusInfo {
   status: OnlineStatus;
@@ -69,7 +70,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     set({ userStatuses: new Map(userStatuses) });
   },
   emitTypingStatus: (chatId, isTyping) => {
-    const socket = get().socket;
+    const socket = useChatStore.getState().socket;
     if (!socket) return;
 
     socket.emit(isTyping ? Events.START_TYPING : Events.STOP_TYPING, {
