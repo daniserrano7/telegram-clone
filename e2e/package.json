@@ -1,0 +1,27 @@
+{
+  "name": "e2e",
+  "version": "1.0.0",
+  "description": "End-to-end tests for telegram-clone",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "install-browsers": "playwright install"
+  },
+  "keywords": [
+    "e2e",
+    "testing",
+    "playwright"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.42.0",
+    "@types/node": "^20.17.24",
+    "@types/uuid": "^9.0.8",
+    "dotenv": "^16.4.5",
+    "socket.io-client": "^4.7.4",
+    "uuid": "^9.0.0"
+  }
+}

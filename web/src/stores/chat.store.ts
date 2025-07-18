@@ -141,7 +141,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       const { data: chat } = result;
       set({ chats: [...get().chats, chat] });
-      get().setActiveChat(chat);
+
+      // Join the newly created chat room to receive messages
+      socketService.emit(Events.JOIN_CHAT, { chatId: chat.id });
+
+      // Ensure active chat includes the messages from the newly created chat
+      set({
+        activeChat: {
+          id: chat.id,
+          members: chat.members,
+          messages: chat.messages || [],
+        },
+      });
     } catch (error) {
       console.error('Failed to create chat', error);
       const msg =

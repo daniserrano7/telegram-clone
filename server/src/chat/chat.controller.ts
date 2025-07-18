@@ -49,8 +49,9 @@ export class ChatController {
     try {
       const chat = await this.chatService.createChat(userIds);
       await this.chatService.addMessage(chat.id, userId, content);
+      const updatedChat = await this.chatService.getChat(chat.id);
       this.chatGateway.emitNewChat(chat.id, userIds);
-      return res.status(HttpStatus.CREATED).json(chat);
+      return res.status(HttpStatus.CREATED).json(updatedChat);
     } catch (error) {
       console.error(error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({

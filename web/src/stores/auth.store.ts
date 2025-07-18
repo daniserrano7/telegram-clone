@@ -82,7 +82,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
     localStorageService.set(LOCAL_STORAGE_USER_KEY, { user, token });
 
-    useChatStore.getState().init(user);
+    await socketService.init(token);
+    await useChatStore.getState().init(user);
     return user;
   },
   login: async ({ username, password }) => {

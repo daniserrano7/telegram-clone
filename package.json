@@ -7,7 +7,8 @@
     "dev": "concurrently \"cd server && pnpm run start:dev\" \"cd web && pnpm run dev\"",
     "typecheck:server": "cd server && pnpm run typecheck",
     "typecheck:web": "cd web && pnpm run typecheck",
-    "typecheck": "concurrently \"pnpm run typecheck:server\" \"pnpm run typecheck:web\""
+    "typecheck": "concurrently \"pnpm run typecheck:server\" \"pnpm run typecheck:web\"",
+    "e2e": "cd e2e && pnpm test"
   },
   "keywords": [],
   "author": "",
