@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { registerUser, loginUser } from '../utils/api';
+import { registerUserUI, loginUserUI } from '../utils/ui';
 import { v4 as uuid } from 'uuid';
 
 const PASSWORD = 'Password123!';
@@ -69,22 +70,13 @@ test.describe('core chat features', () => {
 
   test('after register – chat flow', async ({ page, browser }) => {
     /* Register sender via UI */
-    await page.goto('/register');
-    await page.getByLabel('Username').fill(u1);
-    await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-    await page.getByLabel('Confirm Password').fill(PASSWORD);
-    await page.getByRole('button', { name: /create account/i }).click();
-    await expect(page).toHaveURL(/.*\/chats/);
+    await registerUserUI(page, u1, PASSWORD);
 
     await performCoreChatFlow(page, u1, u2);
 
     /* Open receiver context and reply */
     const page2 = await browser.newPage();
-    await page2.goto('/login');
-    await page2.getByLabel('Username').fill(u2);
-    await page2.getByLabel('Password').fill(PASSWORD);
-    await page2.getByRole('button', { name: /login/i }).click();
-    await expect(page2).toHaveURL(/.*\/chats/);
+    await loginUserUI(page2, u2, PASSWORD);
 
     // Open created chat by selecting chat with sender name in sidebar
     await page2.locator(`text=${u1}`).first().click();
@@ -108,11 +100,7 @@ test.describe('core chat features', () => {
     // Ensure user exists before login
     await registerUser(u1, PASSWORD).catch(() => {});
     
-    await page.goto('/login');
-    await page.getByLabel('Username').fill(u1);
-    await page.getByLabel('Password').fill(PASSWORD);
-    await page.getByRole('button', { name: /login/i }).click();
-    await expect(page).toHaveURL(/.*\/chats/);
+    await loginUserUI(page, u1, PASSWORD);
 
     await performCoreChatFlow(page, u1, u2);
   });
