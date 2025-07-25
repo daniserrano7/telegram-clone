@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"cd server && pnpm run start:dev\" \"cd web && pnpm run dev\"",
+    "dev:e2e": "concurrently \"cd server && pnpm run start:dev:test\" \"cd web && pnpm run dev\"",
     "typecheck:server": "cd server && pnpm run typecheck",
     "typecheck:web": "cd web && pnpm run typecheck",
     "typecheck": "concurrently \"pnpm run typecheck:server\" \"pnpm run typecheck:web\"",
