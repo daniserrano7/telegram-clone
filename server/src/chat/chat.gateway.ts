@@ -8,7 +8,7 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
@@ -34,6 +34,8 @@ if (!allowedOrigins) {
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(ChatGateway.name);
+  
   @WebSocketServer()
   server: Server;
 
@@ -86,7 +88,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           });
       });
     } catch (error) {
-      console.error('Connection error:', error);
+      this.logger.error('Connection error:', error);
       client.disconnect();
     }
   }
@@ -104,7 +106,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Handle user disconnection
       await this.userStatusService.handleUserDisconnect(userId);
     } catch (error) {
-      console.error('Disconnection error:', error);
+      this.logger.error('Disconnection error:', error);
     }
   }
 

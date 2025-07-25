@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Res,
+  Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -12,6 +13,8 @@ import { RegisterRequestDto } from '@shared/auth.dto';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
@@ -61,7 +64,7 @@ export class AuthController {
       });
       return res.json({ token, user });
     } catch (error) {
-      console.error(error);
+      this.logger.error('Registration error:', error);
       const errorMsg =
         error.message === 'User already exists'
           ? error.message
@@ -99,7 +102,7 @@ export class AuthController {
       const { token, user } = await this.authService.login(username, password);
       return res.json({ token, user });
     } catch (error) {
-      console.error(error?.message || 'Error on login controller');
+      this.logger.error('Login error:', error?.message || 'Error on login controller');
       return res
         .status(HttpStatus.UNAUTHORIZED)
         .json({ error: 'Invalid credentials' });

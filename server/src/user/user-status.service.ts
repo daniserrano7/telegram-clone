@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { DbService } from 'src/db/db.service';
 import { Server } from 'socket.io';
 import { Events } from '@shared/gateway.dto';
@@ -12,6 +12,7 @@ interface UserConnection {
 
 @Injectable()
 export class UserStatusService implements OnModuleInit {
+  private readonly logger = new Logger(UserStatusService.name);
   private readonly onlineUsers = new Map<number, UserConnection>();
   private server: Server;
   // Define constants for timing values
@@ -25,14 +26,14 @@ export class UserStatusService implements OnModuleInit {
    */
   async onModuleInit() {
     try {
-      console.log('Resetting all user statuses to OFFLINE on server start');
+      this.logger.log('Resetting all user statuses to OFFLINE on server start');
       await this.db.user.updateMany({
         where: { onlineStatus: 'ONLINE' },
         data: { onlineStatus: 'OFFLINE' },
       });
-      console.log('All user statuses reset to OFFLINE');
+      this.logger.log('All user statuses reset to OFFLINE');
     } catch (error) {
-      console.error('Failed to reset user statuses:', error);
+      this.logger.error('Failed to reset user statuses:', error);
     }
   }
 
@@ -42,7 +43,7 @@ export class UserStatusService implements OnModuleInit {
 
   async handleUserConnect(userId: number, socketId: string) {
     try {
-      console.log(`User ${userId} connected with socket ${socketId}`);
+      this.logger.log(`User ${userId} connected with socket ${socketId}`);
 
       // Store user connection info in memory
       this.onlineUsers.set(userId, {
@@ -62,14 +63,14 @@ export class UserStatusService implements OnModuleInit {
 
       return true;
     } catch (error) {
-      console.error(`Error handling user ${userId} connection:`, error);
+      this.logger.error(`Error handling user ${userId} connection:`, error);
       return false;
     }
   }
 
   async handleUserDisconnect(userId: number) {
     try {
-      console.log(`User ${userId} disconnected`);
+      this.logger.log(`User ${userId} disconnected`);
 
       // Remove user from online users memory map
       this.onlineUsers.delete(userId);
@@ -82,7 +83,7 @@ export class UserStatusService implements OnModuleInit {
 
       return true;
     } catch (error) {
-      console.error(`Error handling user ${userId} disconnection:`, error);
+      this.logger.error(`Error handling user ${userId} disconnection:`, error);
       return false;
     }
   }
@@ -112,7 +113,7 @@ export class UserStatusService implements OnModuleInit {
    * Runs every 30 seconds via cron job in the gateway
    */
   checkStaleConnections() {
-    console.log('Checking for stale connections...');
+    this.logger.debug('Checking for stale connections...');
     const now = new Date();
     let staleConnectionsCount = 0;
 
@@ -121,7 +122,7 @@ export class UserStatusService implements OnModuleInit {
         now.getTime() - connection.lastHeartbeat.getTime();
 
       if (timeSinceLastHeartbeat > this.STALE_CONNECTION_THRESHOLD) {
-        console.log(
+        this.logger.warn(
           `User ${userId} has a stale connection: ${timeSinceLastHeartbeat}ms since last heartbeat`,
         );
         this.handleUserDisconnect(userId);
@@ -130,9 +131,9 @@ export class UserStatusService implements OnModuleInit {
     }
 
     if (staleConnectionsCount > 0) {
-      console.log(`Cleaned up ${staleConnectionsCount} stale connections`);
+      this.logger.log(`Cleaned up ${staleConnectionsCount} stale connections`);
     } else {
-      console.log('No stale connections found');
+      this.logger.debug('No stale connections found');
     }
   }
 
@@ -142,7 +143,7 @@ export class UserStatusService implements OnModuleInit {
    */
   @Cron(CronExpression.EVERY_5_MINUTES)
   async verifyConnections() {
-    console.log('Running connection verification...');
+    this.logger.debug('Running connection verification...');
     const now = new Date();
     let failedCount = 0;
 
@@ -162,9 +163,9 @@ export class UserStatusService implements OnModuleInit {
           connection.lastVerified = now;
           this.onlineUsers.set(userId, connection);
 
-          console.log(`Verified connection for user ${userId}`);
+          this.logger.debug(`Verified connection for user ${userId}`);
         } catch (error) {
-          console.error(
+          this.logger.error(
             `Failed to verify connection for user ${userId}:`,
             error,
           );
@@ -176,7 +177,7 @@ export class UserStatusService implements OnModuleInit {
       }
     }
 
-    console.log(
+    this.logger.debug(
       `Connection verification complete. Failed connections: ${failedCount}`,
     );
 
@@ -198,17 +199,17 @@ export class UserStatusService implements OnModuleInit {
 
       for (const user of onlineUsersInDb) {
         if (!this.onlineUsers.has(user.id)) {
-          console.log(
+          this.logger.warn(
             `Found inconsistency: User ${user.id} marked online in DB but not in memory`,
           );
 
           // Update DB to match memory (the source of truth)
           await this.updateUserStatus(user.id, 'OFFLINE');
-          console.log(`Fixed: User ${user.id} status updated to OFFLINE in DB`);
+          this.logger.log(`Fixed: User ${user.id} status updated to OFFLINE in DB`);
         }
       }
     } catch (error) {
-      console.error('Error during status reconciliation:', error);
+      this.logger.error('Error during status reconciliation:', error);
     }
   }
 
@@ -227,7 +228,7 @@ export class UserStatusService implements OnModuleInit {
       });
       return true;
     } catch (error) {
-      console.error(`Failed to update status for user ${userId}:`, error);
+      this.logger.error(`Failed to update status for user ${userId}:`, error);
 
       // If updating DB fails but we're tracking user as online in memory,
       // we should try to keep things consistent
@@ -254,7 +255,7 @@ export class UserStatusService implements OnModuleInit {
   private sendCurrentOnlineStatusToUser(userId: number, socketId: string) {
     if (!this.server) return;
 
-    console.log(`Sending current online status to user ${userId}`);
+    this.logger.debug(`Sending current online status to user ${userId}`);
     
     // Send status of all currently online users to the newly connected user
     for (const [onlineUserId] of this.onlineUsers.entries()) {

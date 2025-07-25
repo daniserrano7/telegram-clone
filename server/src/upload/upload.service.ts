@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -6,6 +6,7 @@ import { type Multer } from 'multer';
 
 @Injectable()
 export class UploadService {
+  private readonly logger = new Logger(UploadService.name);
   private readonly uploadDir = 'uploads/avatars';
 
   constructor() {
@@ -40,7 +41,7 @@ export class UploadService {
       const filePath = path.join(this.uploadDir, fileName);
       await fs.unlink(filePath);
     } catch (error) {
-      console.error('Failed to delete avatar:', error);
+      this.logger.error('Failed to delete avatar:', error);
     }
   }
 }

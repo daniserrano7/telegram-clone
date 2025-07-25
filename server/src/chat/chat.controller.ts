@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   Delete,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AuthGuard } from '../auth/auth.guard';
@@ -19,6 +20,8 @@ import { ChatGateway } from './chat.gateway';
 
 @Controller('chats')
 export class ChatController {
+  private readonly logger = new Logger(ChatController.name);
+
   constructor(
     private readonly chatService: ChatService,
     private readonly chatGateway: ChatGateway,
@@ -53,7 +56,7 @@ export class ChatController {
       this.chatGateway.emitNewChat(chat.id, userIds);
       return res.status(HttpStatus.CREATED).json(updatedChat);
     } catch (error) {
-      console.error(error);
+      this.logger.error('Failed to create chat:', error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         message: 'Failed to create chat',
         error: error.message,
@@ -214,7 +217,7 @@ export class ChatController {
         message: 'Chat not found',
       });
     } catch (error) {
-      console.error(error);
+      this.logger.error('Failed to delete chat:', error);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         message: 'Failed to delete chat',
         error: error.message,

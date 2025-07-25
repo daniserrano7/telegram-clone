@@ -1,8 +1,18 @@
 import { NestFactory } from '@nestjs/core';
+import { Logger, LogLevel } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Configure log levels based on environment
+  const logLevels: LogLevel[] = process.env.NODE_ENV === 'production' 
+    ? ['error', 'warn', 'log']
+    : ['error', 'warn', 'log', 'debug', 'verbose'];
+
+  const app = await NestFactory.create(AppModule, {
+    logger: logLevels,
+  });
+
+  const logger = new Logger('Bootstrap');
 
   // Get allowed origins from environment variable
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
@@ -31,7 +41,7 @@ async function bootstrap() {
   }
 
   await app.listen(port, host);
-  console.log(`Application is running on: ${await app.getUrl()}`);
-  console.log(`Environment: ${process.env.NODE_ENV}`);
+  logger.log(`Application is running on: ${await app.getUrl()}`);
+  logger.log(`Environment: ${process.env.NODE_ENV}`);
 }
 bootstrap();
