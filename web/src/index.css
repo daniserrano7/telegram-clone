@@ -109,9 +109,9 @@
   --color-background-primary-hover: #f4f4f5;
   --color-background-primary-active: #e9e9ec;
   --color-background-chat: #87b489;
-  --color-background-chat-bubble: #effdde;
-  --color-background-chat-gradient:
-    radial-gradient(
+  --color-background-chat-bubble: #dcf8c6;
+  --color-background-chat-bubble-partner: #e8e8e8;
+  --color-background-chat-gradient: radial-gradient(
       circle at 0 0,
       rgba(226, 232, 104, 0.8) 10%,
       transparent 45%
@@ -154,8 +154,11 @@
   --color-background-chat: #0f1620;
   --color-background-chat-bubble: #2b5378;
   --color-background-chat-bubble-partner: #182533;
-  --color-background-chat-gradient:
-    radial-gradient(circle at bottom left, #ff69b4, transparent 55%),
+  --color-background-chat-gradient: radial-gradient(
+      circle at bottom left,
+      #ff69b4,
+      transparent 55%
+    ),
     radial-gradient(circle at 80% 0%, #4169e1, transparent 55%),
     linear-gradient(135deg, #8a2be2, #ffdab9);
   --color-border: #242f3d;
@@ -218,7 +221,5 @@ body {
 .message-enter-active {
   opacity: 1;
   transform: translateY(0);
-  transition:
-    opacity 300ms,
-    transform 300ms;
+  transition: opacity 300ms, transform 300ms;
 }
