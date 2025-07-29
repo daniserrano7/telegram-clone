@@ -23,3 +23,18 @@ export async function loginUserUI(page: Page, username: string, password: string
   await page.getByRole('button', { name: /login/i }).click();
   await expect(page).toHaveURL(/.*\/chats/);
 }
+
+/**
+ * Opens the profile dialog for the current user
+ */
+export async function openProfileDialog(page: Page): Promise<void> {
+  // Click the hamburger menu button (settings panel trigger)
+  await page.getByTestId('settings-menu-button').click();
+  
+  // Wait for settings panel and click "My Profile"
+  await expect(page.getByText('My Profile')).toBeVisible();
+  await page.getByText('My Profile').click();
+  
+  // Wait for profile dialog to open
+  await expect(page.locator('[role="dialog"]')).toBeVisible();
+}

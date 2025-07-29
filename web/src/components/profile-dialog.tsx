@@ -115,7 +115,10 @@ export const ProfileDialog = ({
           )}
         >
           <Dialog.Close asChild>
-            <button className="absolute right-4 top-4 p-2 rounded-full hover:bg-elevation-hover transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            <button 
+              data-testid="profile-dialog-close"
+              className="absolute right-4 top-4 p-2 rounded-full hover:bg-elevation-hover transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
               <HiOutlineXMark className="w-5 h-5 text-icon-subtle" />
             </button>
           </Dialog.Close>
@@ -132,6 +135,7 @@ export const ProfileDialog = ({
                 <button
                   onClick={handleAvatarClick}
                   disabled={isUploadingAvatar}
+                  data-testid="camera-icon"
                   className={cx(
                     'absolute bottom-0 right-0 p-2 rounded-full bg-primary text-white',
                     'hover:bg-primary/90 transition-colors',

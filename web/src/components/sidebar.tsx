@@ -204,10 +204,14 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
         />
       ) : null}
       <div className="px-4 flex-shrink-0 h-[64px] flex gap-3 items-center border-b border-border">
-        <button onClick={() => setIsSettingsOpen(true)}>
-          {/* Search Bar */}
+        {/* Settings Button */}
+        <button 
+          data-testid="settings-menu-button"
+          onClick={() => setIsSettingsOpen(true)}
+        >
           <HiOutlineBars3 className="size-[24px] text-icon-subtle hover:text-icon" />
         </button>
+        {/* Search Bar */}
         <form
           className="md:w-auto w-full py-3"
           onSubmit={(e) => e.preventDefault()}
