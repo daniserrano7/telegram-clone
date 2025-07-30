@@ -10,7 +10,7 @@ export const HomePage = () => {
   }
 
   return (
-    <main className="w-full h-full relative overflow-hidden bg-slate-100">
+    <main className="w-full h-full relative overflow-hidden">
       {/* Content */}
       <div className="relative w-full h-full flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-md px-4">

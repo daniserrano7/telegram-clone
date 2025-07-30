@@ -66,7 +66,7 @@ export const RegisterPage = () => {
   };
 
   return (
-    <main className="w-full h-full bg-slate-100 relative overflow-hidden">
+    <main className="w-full h-full relative overflow-hidden">
       <div className="relative w-full h-full flex flex-col items-center overflow-y-auto py-8">
         <div className="w-full max-w-md px-4">
           {/* Logo/Brand */}
