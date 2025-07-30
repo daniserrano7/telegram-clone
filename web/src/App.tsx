@@ -14,7 +14,7 @@ export const App = ({ children }: Props) => {
 
   // TODO: Add a loading screen
   if (status === 'not-init' || status === 'initializing') {
-    return <div>Loading...</div>;
+    return;
   }
 
   // TODO: Add an error screen

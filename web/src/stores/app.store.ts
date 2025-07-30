@@ -19,7 +19,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     set({ status: 'initializing' });
-    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     await useAuthStore.getState().init();
 
