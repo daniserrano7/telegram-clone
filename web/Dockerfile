@@ -4,6 +4,16 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
+# Accept build arguments
+ARG VITE_API_URL
+ARG VITE_WS_URL
+ARG VITE_PORT
+
+# Set environment variables from build args
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
+ENV VITE_PORT=$VITE_PORT
+
 # Copy monorepo files
 COPY . .
 
