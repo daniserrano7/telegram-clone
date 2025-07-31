@@ -1,14 +1,15 @@
-name: Deploy to VPS
+name: Deploy to Dev Environment
 
 on:
   push:
-    branches: [master]
+    branches: [develop]
     paths:
       - 'server/**'
       - 'web/**'
       - 'shared/**'
       - 'docker-compose.prod.yml'
-      - '.github/workflows/deploy.yml'
+      - 'docker-compose.dev.yml'
+      - '.github/workflows/deploy-dev.yml'
 
 jobs:
   detect-changes:
@@ -29,10 +30,12 @@ jobs:
               - 'server/**'
               - 'shared/**'
               - 'docker-compose.prod.yml'
+              - 'docker-compose.dev.yml'
             web:
               - 'web/**'
               - 'shared/**'
               - 'docker-compose.prod.yml'
+              - 'docker-compose.dev.yml'
 
   build-and-push-server:
     needs: detect-changes
@@ -58,8 +61,8 @@ jobs:
           file: ./server/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/telegram-clone-server:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/telegram-clone-server:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/telegram-clone-server:dev-latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/telegram-clone-server:dev-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -87,11 +90,11 @@ jobs:
           file: ./web/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/telegram-clone-web:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/telegram-clone-web:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/telegram-clone-web:dev-latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/telegram-clone-web:dev-${{ github.sha }}
           build-args: |
-            VITE_API_URL=${{ secrets.VITE_API_URL }}
-            VITE_WS_URL=${{ secrets.VITE_WS_URL }}
+            VITE_API_URL=${{ secrets.DEV_VITE_API_URL }}
+            VITE_WS_URL=${{ secrets.DEV_VITE_WS_URL }}
             VITE_PORT=${{ secrets.VITE_PORT }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -111,8 +114,8 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            mkdir -p /opt/telegram-clone
-            cd /opt/telegram-clone
+            mkdir -p /opt/telegram-clone-dev
+            cd /opt/telegram-clone-dev
             
       - name: Copy docker-compose to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -120,39 +123,39 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "/opt/telegram-clone/"
+          source: "docker-compose.dev.yml,.docker/"
+          target: "/opt/telegram-clone-dev/"
           
-      - name: Deploy to VPS
+      - name: Deploy to Dev Environment
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /opt/telegram-clone
+            cd /opt/telegram-clone-dev
             
-            # Export environment variables
+            # Export environment variables for dev
             export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
-            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
-            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
-            export ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}"
-            export VITE_API_URL="${{ secrets.VITE_API_URL }}"
-            export VITE_WS_URL="${{ secrets.VITE_WS_URL }}"
+            export DATABASE_URL="${{ secrets.DEV_DATABASE_URL }}"
+            export JWT_SECRET="${{ secrets.DEV_JWT_SECRET }}"
+            export ALLOWED_ORIGINS="${{ secrets.DEV_ALLOWED_ORIGINS }}"
+            export VITE_API_URL="${{ secrets.DEV_VITE_API_URL }}"
+            export VITE_WS_URL="${{ secrets.DEV_VITE_WS_URL }}"
             export VITE_PORT="${{ secrets.VITE_PORT }}"
-            export DB_USER="${{ secrets.DB_USER }}"
-            export DB_NAME="${{ secrets.DB_NAME }}"
-            export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            export DB_USER="${{ secrets.DEV_DB_USER }}"
+            export DB_NAME="${{ secrets.DEV_DB_NAME }}"
+            export DB_PASSWORD="${{ secrets.DEV_DB_PASSWORD }}"
             export PORT="5000"
             
-            # Pull latest images
-            docker-compose -f docker-compose.prod.yml pull
+            # Pull latest dev images
+            docker-compose -f docker-compose.dev.yml pull
             
             # Start services
-            docker-compose -f docker-compose.prod.yml up -d
+            docker-compose -f docker-compose.dev.yml up -d
             
             # Clean up old images
             docker image prune -f
             
             # Show running containers
-            docker-compose -f docker-compose.prod.yml ps
+            docker-compose -f docker-compose.dev.yml ps

@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db_dev
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - '5433:5432' # Different port to avoid conflicts
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    networks:
+      - app_network_dev
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  server:
+    image: ${DOCKERHUB_USERNAME}/telegram-clone-server:dev-latest
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - PORT=${PORT}
+    container_name: server_dev
+    ports:
+      - '5001:5000' # Different port to avoid conflicts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app_network_dev
+
+  web:
+    image: ${DOCKERHUB_USERNAME}/telegram-clone-web:dev-latest
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_WS_URL=${VITE_WS_URL}
+      - VITE_PORT=${VITE_PORT}
+    container_name: web_dev
+    ports:
+      - '81:80' # Different port to avoid conflicts
+    depends_on:
+      - server
+    networks:
+      - app_network_dev
+    volumes:
+      - web_dist_dev:/usr/share/nginx/html
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_dev
+    restart: always
+    volumes:
+      - ./.docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - web_dist_dev:/usr/share/nginx/html
+    ports:
+      - '8080:80' # Dev environment on port 8080
+    depends_on:
+      - web
+      - server
+    networks:
+      - app_network_dev
+
+networks:
+  app_network_dev:
+    name: app_network_dev
+    driver: bridge
+volumes:
+  pgdata_dev:
+  web_dist_dev:
