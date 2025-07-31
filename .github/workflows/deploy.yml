@@ -100,6 +100,7 @@ jobs:
     needs: [detect-changes, build-and-push-server, build-and-push-web]
     if: always() && (needs.build-and-push-server.result == 'success' || needs.build-and-push-web.result == 'success' || (needs.build-and-push-server.result == 'skipped' && needs.build-and-push-web.result == 'skipped' && (needs.detect-changes.outputs.server-changed == 'true' || needs.detect-changes.outputs.web-changed == 'true')))
     runs-on: ubuntu-latest
+    environment: PROD
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -1,42 +1,51 @@
 # Deployment Setup Guide
 
-## GitHub Secrets Configuration
+## GitHub Environments and Secrets Configuration
 
-You need to set up the following secrets in your GitHub repository (`Settings > Secrets and variables > Actions`):
+### 1. Set up GitHub Environments
 
-### Docker Hub Secrets
+Go to your GitHub repository → `Settings > Environments` and create:
+- **`PROD`** environment (for master branch deployments)
+- **`DEV`** environment (for develop branch deployments)
+
+### 2. Configure Shared Secrets
+
+Add these secrets at the repository level (`Settings > Secrets and variables > Actions`):
+
+#### Docker Hub Secrets
 - `DOCKERHUB_USERNAME` - Your Docker Hub username
 - `DOCKERHUB_TOKEN` - Docker Hub access token (create at hub.docker.com > Account Settings > Security)
 
-### VPS Connection Secrets
+#### VPS Connection Secrets
 - `VPS_HOST` - Your VPS IP address (e.g., `123.456.789.012`)
 - `VPS_USERNAME` - SSH username (usually `root` or your user)
 - `VPS_SSH_KEY` - Private SSH key content (the entire content of your `~/.ssh/id_rsa` file)
 
-### Database Secrets
-- `DB_USER` - PostgreSQL username (e.g., `telegram_user`)
-- `DB_NAME` - PostgreSQL database name (e.g., `telegram_db`)
-- `DB_PASSWORD` - PostgreSQL password
-- `DATABASE_URL` - Full database connection string:  
-  `postgresql://DB_USER:DB_PASSWORD@postgres:5432/DB_NAME`
+### 3. Configure Environment-Specific Secrets
 
-### Application Secrets (Production)
+#### Production Environment Secrets
+Add these secrets to the **`PROD`** environment:
 - `JWT_SECRET` - Random string for JWT signing (generate with `openssl rand -base64 32`)
 - `ALLOWED_ORIGINS` - Frontend URL (e.g., `http://YOUR_VPS_IP`)
 - `VITE_API_URL` - Backend API URL (e.g., `http://YOUR_VPS_IP/api`)
 - `VITE_WS_URL` - WebSocket URL (e.g., `ws://YOUR_VPS_IP`)
 - `VITE_PORT` - Frontend port (usually `80`)
+- `DATABASE_URL` - Full database connection string: `postgresql://DB_USER:DB_PASSWORD@postgres:5432/DB_NAME`
+- `DB_USER` - PostgreSQL username (e.g., `telegram_user`)
+- `DB_NAME` - PostgreSQL database name (e.g., `telegram_db`)
+- `DB_PASSWORD` - PostgreSQL password
 
-### Development Environment Secrets
-- `DEV_JWT_SECRET` - Random string for JWT signing (different from prod)
-- `DEV_ALLOWED_ORIGINS` - Dev frontend URL (e.g., `http://YOUR_VPS_IP:8080`)
-- `DEV_VITE_API_URL` - Dev backend API URL (e.g., `http://YOUR_VPS_IP:8080/api`)
-- `DEV_VITE_WS_URL` - Dev WebSocket URL (e.g., `ws://YOUR_VPS_IP:8080`)
-- `DEV_DATABASE_URL` - Dev database connection string:  
-  `postgresql://DEV_DB_USER:DEV_DB_PASSWORD@postgres:5432/DEV_DB_NAME`
-- `DEV_DB_USER` - Dev PostgreSQL username (e.g., `telegram_dev_user`)
-- `DEV_DB_NAME` - Dev PostgreSQL database name (e.g., `telegram_dev_db`)
-- `DEV_DB_PASSWORD` - Dev PostgreSQL password
+#### Development Environment Secrets
+Add these secrets to the **`DEV`** environment:
+- `JWT_SECRET` - Random string for JWT signing (different from prod)
+- `ALLOWED_ORIGINS` - Dev frontend URL (e.g., `http://YOUR_VPS_IP:8080`)
+- `VITE_API_URL` - Dev backend API URL (e.g., `http://YOUR_VPS_IP:8080/api`)
+- `VITE_WS_URL` - Dev WebSocket URL (e.g., `ws://YOUR_VPS_IP:8080`)
+- `VITE_PORT` - Frontend port (usually `80`)
+- `DATABASE_URL` - Dev database connection string: `postgresql://DB_USER:DB_PASSWORD@postgres:5432/DB_NAME`
+- `DB_USER` - Dev PostgreSQL username (e.g., `telegram_dev_user`)
+- `DB_NAME` - Dev PostgreSQL database name (e.g., `telegram_dev_db`)
+- `DB_PASSWORD` - Dev PostgreSQL password
 
 ## VPS Initial Setup
 
@@ -100,7 +109,7 @@ You need to set up the following secrets in your GitHub repository (`Settings > 
 # On your VPS
 cd /opt/telegram-clone
 export DOCKERHUB_USERNAME="your_username"
-# ... export all other env vars
+# ... export all other prod env vars
 docker-compose -f docker-compose.prod.yml pull
 docker-compose -f docker-compose.prod.yml up -d
 ```
@@ -110,7 +119,7 @@ docker-compose -f docker-compose.prod.yml up -d
 # On your VPS
 cd /opt/telegram-clone-dev
 export DOCKERHUB_USERNAME="your_username"
-# ... export all other DEV env vars
+# ... export all other dev env vars
 docker-compose -f docker-compose.dev.yml pull
 docker-compose -f docker-compose.dev.yml up -d
 ```

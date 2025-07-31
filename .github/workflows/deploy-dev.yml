@@ -93,8 +93,8 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/telegram-clone-web:dev-latest
             ${{ secrets.DOCKERHUB_USERNAME }}/telegram-clone-web:dev-${{ github.sha }}
           build-args: |
-            VITE_API_URL=${{ secrets.DEV_VITE_API_URL }}
-            VITE_WS_URL=${{ secrets.DEV_VITE_WS_URL }}
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_WS_URL=${{ secrets.VITE_WS_URL }}
             VITE_PORT=${{ secrets.VITE_PORT }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -103,6 +103,7 @@ jobs:
     needs: [detect-changes, build-and-push-server, build-and-push-web]
     if: always() && (needs.build-and-push-server.result == 'success' || needs.build-and-push-web.result == 'success' || (needs.build-and-push-server.result == 'skipped' && needs.build-and-push-web.result == 'skipped' && (needs.detect-changes.outputs.server-changed == 'true' || needs.detect-changes.outputs.web-changed == 'true')))
     runs-on: ubuntu-latest
+    environment: DEV
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -135,17 +136,17 @@ jobs:
           script: |
             cd /opt/telegram-clone-dev
             
-            # Export environment variables for dev
+            # Export environment variables for development
             export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
-            export DATABASE_URL="${{ secrets.DEV_DATABASE_URL }}"
-            export JWT_SECRET="${{ secrets.DEV_JWT_SECRET }}"
-            export ALLOWED_ORIGINS="${{ secrets.DEV_ALLOWED_ORIGINS }}"
-            export VITE_API_URL="${{ secrets.DEV_VITE_API_URL }}"
-            export VITE_WS_URL="${{ secrets.DEV_VITE_WS_URL }}"
+            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            export ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}"
+            export VITE_API_URL="${{ secrets.VITE_API_URL }}"
+            export VITE_WS_URL="${{ secrets.VITE_WS_URL }}"
             export VITE_PORT="${{ secrets.VITE_PORT }}"
-            export DB_USER="${{ secrets.DEV_DB_USER }}"
-            export DB_NAME="${{ secrets.DEV_DB_NAME }}"
-            export DB_PASSWORD="${{ secrets.DEV_DB_PASSWORD }}"
+            export DB_USER="${{ secrets.DB_USER }}"
+            export DB_NAME="${{ secrets.DB_NAME }}"
+            export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
             export PORT="5000"
             
             # Pull latest dev images
