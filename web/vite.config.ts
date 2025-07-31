@@ -5,8 +5,8 @@ import tsConfigPaths from 'vite-tsconfig-paths';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-  const port = env.VITE_PORT;
+  // Try process.env first, then fallback to loadEnv
+  const port = process.env.VITE_PORT || loadEnv(mode, process.cwd(), '').VITE_PORT;
 
   if (!port) {
     throw new Error('VITE_PORT is not set');
