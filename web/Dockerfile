@@ -23,10 +23,10 @@ RUN npm install -g pnpm
 # Install dependencies
 RUN pnpm install --frozen-lockfile --force
 
-# Create .env file from environment variables
-RUN echo "VITE_API_URL=$VITE_API_URL" > web/.env && \
-    echo "VITE_WS_URL=$VITE_WS_URL" >> web/.env && \
-    echo "VITE_PORT=$VITE_PORT" >> web/.env
+# Create .env file from environment variables (in monorepo root where pnpm runs)
+RUN echo "VITE_API_URL=$VITE_API_URL" > .env && \
+    echo "VITE_WS_URL=$VITE_WS_URL" >> .env && \
+    echo "VITE_PORT=$VITE_PORT" >> .env
 
 # Build the frontend
 RUN pnpm --filter web build
