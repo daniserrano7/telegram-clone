@@ -4,15 +4,10 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Accept build arguments
+# Accept build arguments (these come from docker-compose or GitHub Actions)
 ARG VITE_API_URL
-ARG VITE_WS_URL
+ARG VITE_WS_URL  
 ARG VITE_PORT
-
-# Set environment variables from build args
-ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_WS_URL=$VITE_WS_URL
-ENV VITE_PORT=$VITE_PORT
 
 # Copy monorepo files
 COPY . .
@@ -23,10 +18,11 @@ RUN npm install -g pnpm
 # Install dependencies
 RUN pnpm install --frozen-lockfile --force
 
-# Create .env file from environment variables (in monorepo root where pnpm runs)
-RUN echo "VITE_API_URL=$VITE_API_URL" > .env && \
-    echo "VITE_WS_URL=$VITE_WS_URL" >> .env && \
-    echo "VITE_PORT=$VITE_PORT" >> .env
+# Create .env file in web directory from build args
+RUN echo "VITE_API_URL=${VITE_API_URL}" > web/.env && \
+    echo "VITE_WS_URL=${VITE_WS_URL}" >> web/.env && \
+    echo "VITE_PORT=${VITE_PORT}" >> web/.env && \
+    echo "Created web/.env with:" && cat web/.env
 
 # Build the frontend
 RUN pnpm --filter web build
