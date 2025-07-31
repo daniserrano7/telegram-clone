@@ -82,6 +82,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # Debug step to verify secrets are available
+      - name: Debug environment variables
+        run: |
+          echo "VITE_API_URL is set: ${{ secrets.VITE_API_URL != '' }}"
+          echo "VITE_WS_URL is set: ${{ secrets.VITE_WS_URL != '' }}"
+          echo "VITE_PORT is set: ${{ secrets.VITE_PORT != '' }}"
+
       - name: Build and push web image
         uses: docker/build-push-action@v5
         with:
