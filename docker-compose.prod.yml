@@ -51,6 +51,7 @@ services:
       - app_network
     volumes:
       - web_dist:/usr/share/nginx/html
+    command: sh -c "cp -r /app/web/dist/* /usr/share/nginx/html/ && tail -f /dev/null"
 
   nginx:
     image: nginx:latest
