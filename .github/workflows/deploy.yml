@@ -63,6 +63,7 @@ jobs:
           context: .
           file: ./server/Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/daniserrano7/telechat-server:latest
             ghcr.io/daniserrano7/telechat-server:${{ github.sha }}
@@ -101,6 +102,7 @@ jobs:
           context: .
           file: ./web/Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/daniserrano7/telechat-web:latest
             ghcr.io/daniserrano7/telechat-web:${{ github.sha }}
