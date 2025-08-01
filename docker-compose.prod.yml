@@ -23,7 +23,7 @@ services:
       start_period: 10s
 
   server:
-    image: ${DOCKERHUB_USERNAME}/telegram-clone-server:latest
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/telechat-server:latest
     environment:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL}
@@ -40,7 +40,7 @@ services:
       - app_network
 
   web:
-    image: ${DOCKERHUB_USERNAME}/telegram-clone-web:latest
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/telechat-web:latest
     environment:
       - NODE_ENV=production
       - VITE_API_URL=${VITE_API_URL}
