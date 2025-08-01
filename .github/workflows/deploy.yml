@@ -155,6 +155,9 @@ jobs:
             export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
             export PORT="5000"
 
+            # Login to Docker Hub on VPS
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
             # Pull latest images
             docker-compose -f docker-compose.prod.yml pull
 
