@@ -45,8 +45,6 @@ services:
       - VITE_WS_URL=${VITE_WS_URL}
       - VITE_PORT=${VITE_PORT}
     container_name: web
-    ports:
-      - '80:80' # Only expose internally
     depends_on:
       - server
     networks:
