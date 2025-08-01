@@ -49,6 +49,7 @@ jobs:
           script: |
             cd /home/deploy/telechat
             git pull origin master
+            chmod +x deploy-server.sh
             ./deploy-server.sh
 
   deploy-web:
@@ -68,6 +69,7 @@ jobs:
           script: |
             cd /home/deploy/telechat
             git pull origin master
+            chmod +x deploy-web.sh
             ./deploy-web.sh "${{ secrets.VITE_API_URL }}" "${{ secrets.VITE_WS_URL }}" "${{ secrets.VITE_PORT }}"
 
   # Optional: Send notification on successful deployment
