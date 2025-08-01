@@ -10,6 +10,10 @@ on:
       - 'docker-compose.prod.yml'
       - '.github/workflows/deploy.yml'
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
@@ -60,8 +64,8 @@ jobs:
           file: ./server/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/telechat-server:latest
-            ghcr.io/${{ github.repository_owner }}/telechat-server:${{ github.sha }}
+            ghcr.io/daniserrano7/telechat-server:latest
+            ghcr.io/daniserrano7/telechat-server:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -98,8 +102,8 @@ jobs:
           file: ./web/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/telechat-web:latest
-            ghcr.io/${{ github.repository_owner }}/telechat-web:${{ github.sha }}
+            ghcr.io/daniserrano7/telechat-web:latest
+            ghcr.io/daniserrano7/telechat-web:${{ github.sha }}
           build-args: |
             VITE_API_URL=${{ secrets.VITE_API_URL }}
             VITE_WS_URL=${{ secrets.VITE_WS_URL }}
@@ -145,7 +149,7 @@ jobs:
             cd /opt/telegram-clone
 
             # Export environment variables
-            export GITHUB_REPOSITORY_OWNER="${{ github.repository_owner }}"
+            # No longer needed since we hardcoded the username
             export DATABASE_URL="${{ secrets.DATABASE_URL }}"
             export JWT_SECRET="${{ secrets.JWT_SECRET }}"
             export ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}"
