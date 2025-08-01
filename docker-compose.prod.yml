@@ -60,14 +60,24 @@ services:
     volumes:
       - ./.docker/nginx.conf:/etc/nginx/nginx.conf:ro
       - web_dist:/usr/share/nginx/html
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
     ports:
       - '80:80'
-      - '443:443' # For HTTPS
+      - '443:443'
     depends_on:
       - web
       - server
     networks:
       - app_network
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email daniserrano1994@gmail.com --agree-tos --no-eff-email -d telechat.es -d www.telechat.es
 
 networks:
   app_network:
@@ -76,3 +86,5 @@ networks:
 volumes:
   pgdata:
   web_dist:
+  certbot_conf:
+  certbot_www:
