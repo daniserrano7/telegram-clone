@@ -7,8 +7,6 @@ on:
       - 'server/**'
       - 'web/**'
       - 'shared/**'
-      - 'deploy-server.sh'
-      - 'deploy-web.sh'
       - '.github/workflows/deploy.yml'
 
 jobs:
@@ -26,11 +24,9 @@ jobs:
             server:
               - 'server/**'
               - 'shared/**'
-              - 'deploy-server.sh'
             web:
               - 'web/**'
               - 'shared/**'
-              - 'deploy-web.sh'
 
   deploy-server:
     needs: detect-changes
@@ -40,20 +36,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build server
+        run: pnpm --filter server build
+
       - name: Deploy server to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "server/dist,server/package.json,server/prisma,shared"
+          target: "/home/deploy/telechat/"
+          overwrite: true
+
+      - name: Restart server on VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            mkdir -p ~/.ssh
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-            cd /home/deploy/telechat
-            git config --global --add safe.directory /home/deploy/telechat
-            git pull origin master
-            chmod +x deploy-server.sh
-            ./deploy-server.sh
+            cd /home/deploy/telechat/server
+            pnpm install --prod --frozen-lockfile
+            pnpm prisma migrate deploy
+            pm2 restart telegram-server || pm2 start npm --name "telegram-server" -- start
+            pm2 save
 
   deploy-web:
     needs: detect-changes
@@ -63,20 +84,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter web build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
+          VITE_PORT: ${{ secrets.VITE_PORT }}
+
       - name: Deploy web app to VPS
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            mkdir -p ~/.ssh
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-            cd /home/deploy/telechat
-            git config --global --add safe.directory /home/deploy/telechat
-            git pull origin master
-            chmod +x deploy-web.sh
-            ./deploy-web.sh "${{ secrets.VITE_API_URL }}" "${{ secrets.VITE_WS_URL }}" "${{ secrets.VITE_PORT }}"
+          source: "web/dist/*"
+          target: "/var/www/telechat/web/"
+          overwrite: true
+          strip_components: 2
 
   # Optional: Send notification on successful deployment
   notify:
