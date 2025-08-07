@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { ChatModule } from './chat/chat.module';
 import { UserModule } from './user/user.module';
 import { UploadModule } from './upload/upload.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UploadModule } from './upload/upload.module';
     AuthModule,
     ChatModule,
     UserModule,
+    HealthModule,
     ConfigModule.forRoot({
       envFilePath:
         process.env.NODE_ENV === 'production' ? '.env.production' : '.env.dev',
