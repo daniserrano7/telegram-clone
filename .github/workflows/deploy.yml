@@ -64,7 +64,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: 'server/dist,server/package.json,server/prisma,shared'
+          source: 'server/dist,server/package.json,server/prisma,shared,server/node_modules/.prisma'
           target: '/home/deploy/telechat/'
           overwrite: true
 
@@ -76,9 +76,20 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /home/deploy/telechat/server
-            pnpm install --prod --frozen-lockfile
+            pnpm install --prod --no-frozen-lockfile
+            
+            # Create .env.production file with secrets
+            cat > .env.production << EOF
+            NODE_ENV=production
+            DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            PORT="${{ secrets.PORT }}"
+            ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}"
+            JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            EOF
+            
+            pnpm prisma generate
             pnpm prisma migrate deploy
-            pm2 restart telegram-server || pm2 start npm --name "telegram-server" -- start
+            NODE_ENV=production pm2 restart telegram-server || NODE_ENV=production pm2 start npm --name "telegram-server" -- start
             pm2 save
 
   deploy-web:
