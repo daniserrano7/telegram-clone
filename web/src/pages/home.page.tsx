@@ -15,7 +15,7 @@ export const HomePage = () => {
       <div className="relative w-full h-full flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-md px-4">
           <div className="text-center mb-6 relative">
-            {/* Title section with improved backdrop */}
+            {/* Title section with improved backdrop and logo */}
             <div className="relative">
               <div className="mb-6">
                 <Logo />
