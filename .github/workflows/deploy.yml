@@ -24,9 +24,11 @@ jobs:
             server:
               - 'server/**'
               - 'shared/**'
+              - '.github/workflows/deploy.yml'
             web:
               - 'web/**'
               - 'shared/**'
+              - '.github/workflows/deploy.yml'
 
   deploy-server:
     needs: detect-changes
@@ -50,6 +52,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm --filter server prisma generate
+
       - name: Build server
         run: pnpm --filter server build
 
@@ -59,8 +64,8 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "server/dist,server/package.json,server/prisma,shared"
-          target: "/home/deploy/telechat/"
+          source: 'server/dist,server/package.json,server/prisma,shared'
+          target: '/home/deploy/telechat/'
           overwrite: true
 
       - name: Restart server on VPS
@@ -111,8 +116,8 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "web/dist/*"
-          target: "/var/www/telechat/web/"
+          source: 'web/dist/*'
+          target: '/var/www/telechat/web/'
           overwrite: true
           strip_components: 2
 
