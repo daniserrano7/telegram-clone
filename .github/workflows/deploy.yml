@@ -47,7 +47,10 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            mkdir -p ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
             cd /home/deploy/telechat
+            git config --global --add safe.directory /home/deploy/telechat
             git pull origin master
             chmod +x deploy-server.sh
             ./deploy-server.sh
@@ -67,7 +70,10 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            mkdir -p ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
             cd /home/deploy/telechat
+            git config --global --add safe.directory /home/deploy/telechat
             git pull origin master
             chmod +x deploy-web.sh
             ./deploy-web.sh "${{ secrets.VITE_API_URL }}" "${{ secrets.VITE_WS_URL }}" "${{ secrets.VITE_PORT }}"

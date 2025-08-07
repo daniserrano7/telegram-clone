@@ -1,160 +1,336 @@
-# Deployment Setup Guide
+# Deployment Documentation
 
-## GitHub Environments and Secrets Configuration
+## Overview
 
-### 1. Set up GitHub Environments
+This document describes the deployment process for the Telegram Clone application. The deployment is split into **manual setup** (infrastructure) and **automated deployment** (application code).
 
-Go to your GitHub repository → `Settings > Environments` and create:
-- **`PROD`** environment (for master branch deployments)
-- **`DEV`** environment (for develop branch deployments)
+## Architecture
 
-### 2. Configure Shared Secrets
+- **VPS Server**: Hosts the entire application
+- **Components**:
+  - **PostgreSQL Database**: Manually configured
+  - **Nginx**: Manually configured as reverse proxy and static file server
+  - **Server Application**: Automated deployment via GitHub Actions
+  - **Web Application**: Automated deployment via GitHub Actions
 
-Add these secrets at the repository level (`Settings > Secrets and variables > Actions`):
+## Manual Setup (One-time Infrastructure Setup)
 
-#### Docker Hub Secrets
-- `DOCKERHUB_USERNAME` - Your Docker Hub username
-- `DOCKERHUB_TOKEN` - Docker Hub access token (create at hub.docker.com > Account Settings > Security)
+### 1. VPS Prerequisites
 
-#### VPS Connection Secrets
-- `VPS_HOST` - Your VPS IP address (e.g., `123.456.789.012`)
-- `VPS_USERNAME` - SSH username (usually `root` or your user)
-- `VPS_SSH_KEY` - Private SSH key content (the entire content of your `~/.ssh/id_rsa` file)
+- Ubuntu/Debian-based VPS
+- SSH access with deploy user
+- Domain pointing to VPS IP
 
-### 3. Configure Environment-Specific Secrets
+### 2. Manual Infrastructure Components
 
-#### Production Environment Secrets
-Add these secrets to the **`PROD`** environment:
-- `JWT_SECRET` - Random string for JWT signing (generate with `openssl rand -base64 32`)
-- `ALLOWED_ORIGINS` - Frontend URL (e.g., `http://YOUR_VPS_IP`)
-- `VITE_API_URL` - Backend API URL (e.g., `http://YOUR_VPS_IP/api`)
-- `VITE_WS_URL` - WebSocket URL (e.g., `ws://YOUR_VPS_IP`)
-- `VITE_PORT` - Frontend port (usually `80`)
-- `DATABASE_URL` - Full database connection string: `postgresql://DB_USER:DB_PASSWORD@postgres:5432/DB_NAME`
-- `DB_USER` - PostgreSQL username (e.g., `telegram_user`)
-- `DB_NAME` - PostgreSQL database name (e.g., `telegram_db`)
-- `DB_PASSWORD` - PostgreSQL password
+#### PostgreSQL Database
+- Install PostgreSQL on the VPS
+- Create database: `telegram_clone`
+- Create database user with appropriate permissions
+- Configure connection settings
 
-#### Development Environment Secrets
-Add these secrets to the **`DEV`** environment:
-- `JWT_SECRET` - Random string for JWT signing (different from prod)
-- `ALLOWED_ORIGINS` - Dev frontend URL (e.g., `http://YOUR_VPS_IP:8080`)
-- `VITE_API_URL` - Dev backend API URL (e.g., `http://YOUR_VPS_IP:8080/api`)
-- `VITE_WS_URL` - Dev WebSocket URL (e.g., `ws://YOUR_VPS_IP:8080`)
-- `VITE_PORT` - Frontend port (usually `80`)
-- `DATABASE_URL` - Dev database connection string: `postgresql://DB_USER:DB_PASSWORD@postgres:5432/DB_NAME`
-- `DB_USER` - Dev PostgreSQL username (e.g., `telegram_dev_user`)
-- `DB_NAME` - Dev PostgreSQL database name (e.g., `telegram_dev_db`)
-- `DB_PASSWORD` - Dev PostgreSQL password
+#### Nginx Configuration
+- Install Nginx
+- Configure as reverse proxy for the server application
+- Serve static files for the web application
+- Set up SSL/TLS certificates (Let's Encrypt recommended)
+- Configure web root at `/var/www/telechat/web/`
 
-## VPS Initial Setup
+#### System Dependencies
+- Install Node.js (v14+)
+- Install pnpm package manager
+- Install PM2 for process management
+- Install Git for code deployment
 
-1. **Connect to your VPS:**
-   ```bash
-   ssh root@YOUR_VPS_IP
-   ```
-
-2. **Update system:**
-   ```bash
-   apt update && apt upgrade -y
-   ```
-
-3. **Install Docker:**
-   ```bash
-   curl -fsSL https://get.docker.com -o get-docker.sh
-   sh get-docker.sh
-   systemctl start docker
-   systemctl enable docker
-   ```
-
-4. **Install Docker Compose:**
-   ```bash
-   curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-   chmod +x /usr/local/bin/docker-compose
-   ```
-
-5. **Set up firewall:**
-   ```bash
-   ufw allow OpenSSH
-   ufw allow 80/tcp
-   ufw allow 443/tcp
-   ufw --force enable
-   ```
-
-6. **Generate SSH key (if needed):**
-   ```bash
-   ssh-keygen -t rsa -b 4096 -C "your-email@example.com"
-   cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-   ```
-   Copy the private key content (`cat ~/.ssh/id_rsa`) to use as `VPS_SSH_KEY` secret.
-
-## How the Deployment Works
-
-### Production Deployment
-1. **Trigger:** Push to `master` branch with changes in `server/`, `web/`, or `shared/` directories
-2. **Change Detection:** Only builds components that have changed
-3. **Docker Build:** Builds and pushes images to Docker Hub with `:latest` tags
-4. **Deploy:** SSH to VPS and runs docker-compose in `/opt/telegram-clone` (accessible on port 80)
-
-### Development Deployment
-1. **Trigger:** Push to `develop` branch with changes in `server/`, `web/`, or `shared/` directories
-2. **Change Detection:** Only builds components that have changed
-3. **Docker Build:** Builds and pushes images to Docker Hub with `:dev-latest` tags
-4. **Deploy:** SSH to VPS and runs docker-compose in `/opt/telegram-clone-dev` (accessible on port 8080)
-
-## Manual Deployment (if needed)
-
-### Production
-```bash
-# On your VPS
-cd /opt/telegram-clone
-export DOCKERHUB_USERNAME="your_username"
-# ... export all other prod env vars
-docker-compose -f docker-compose.prod.yml pull
-docker-compose -f docker-compose.prod.yml up -d
+#### Directory Structure
+```
+/home/deploy/telechat/          # Application code repository
+/var/www/telechat/web/          # Web application static files
 ```
 
-### Development
+#### User Setup
+- Create `deploy` user with SSH access
+- Configure SSH key authentication
+- Grant necessary permissions for deployment operations
+
+## Automated Deployment (GitHub Actions)
+
+### Trigger Conditions
+The deployment workflow (`.github/workflows/deploy.yml`) triggers on:
+- Push to `master` branch
+- Changes to specific paths:
+  - `server/**` (server code)
+  - `web/**` (web code)
+  - `shared/**` (shared utilities)
+  - `deploy-*.sh` (deployment scripts)
+  - `.github/workflows/deploy.yml` (workflow itself)
+
+### Deployment Process
+
+#### 1. Change Detection
+- Uses `dorny/paths-filter` to detect which components changed
+- Runs separate jobs for server and web deployments
+- Only deploys changed components
+
+#### 2. Server Deployment (`deploy-server.sh`)
+**Triggers when**: Server, shared, or deployment script changes
+
+**Automated steps**:
+1. SSH into VPS
+2. Navigate to `/home/deploy/telechat`
+3. Pull latest code from `master` branch
+4. Install dependencies with `pnpm install --frozen-lockfile`
+5. Build server application: `pnpm --filter server build`
+6. Run database migrations: `pnpm --filter server prisma migrate deploy`
+7. Restart server with PM2: `pm2 restart telegram-server`
+8. Save PM2 state
+
+#### 3. Web Deployment (`deploy-web.sh`)
+**Triggers when**: Web, shared, or deployment script changes
+
+**Automated steps**:
+1. SSH into VPS
+2. Navigate to `/home/deploy/telechat`
+3. Pull latest code from `master` branch
+4. Install dependencies with `pnpm install --frozen-lockfile`
+5. Build web application with environment variables
+6. Remove old static files from `/var/www/telechat/web/`
+7. Copy new build to web root
+
+### Required GitHub Secrets
+
+Configure these in your GitHub repository settings under Secrets and Variables > Actions:
+
+- `VPS_HOST`: VPS server IP address or hostname
+- `VPS_USERNAME`: SSH username (typically `deploy`)
+- `VPS_SSH_KEY`: Private SSH key for authentication
+- `VITE_API_URL`: API endpoint URL for web application
+- `VITE_WS_URL`: WebSocket endpoint URL for web application
+- `VITE_PORT`: Port for the web application
+
+### Environment Configuration
+
+The workflow uses the `PROD` environment, which should be configured in GitHub with the above secrets.
+
+## Deployment Scripts
+
+### deploy-server.sh
+- Located at project root
+- Handles server-side deployment
+- Includes database migration
+- Manages PM2 process restart
+
+### deploy-web.sh
+- Located at project root
+- Handles web application build and deployment
+- Takes environment variables as arguments
+- Copies built files to Nginx web root
+
+## Manual Steps to Reproduce Full Setup
+
+### 1. VPS Initial Setup
+
 ```bash
-# On your VPS
-cd /opt/telegram-clone-dev
-export DOCKERHUB_USERNAME="your_username"
-# ... export all other dev env vars
-docker-compose -f docker-compose.dev.yml pull
-docker-compose -f docker-compose.dev.yml up -d
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install Node.js
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Install pnpm
+npm install -g pnpm
+
+# Install PM2
+npm install -g pm2
+
+# Install PostgreSQL
+sudo apt install postgresql postgresql-contrib
+
+# Install Nginx
+sudo apt install nginx
+
+# Install Git
+sudo apt install git
 ```
 
-## Monitoring
-
-### Production
-```bash
-# On VPS
-cd /opt/telegram-clone
-docker-compose -f docker-compose.prod.yml ps
-docker-compose -f docker-compose.prod.yml logs
-```
-
-### Development
-```bash
-# On VPS
-cd /opt/telegram-clone-dev
-docker-compose -f docker-compose.dev.yml ps
-docker-compose -f docker-compose.dev.yml logs
-```
-
-## Local Testing
-
-Test the Docker setup locally before deploying:
+### 2. Database Setup
 
 ```bash
-# Test with local environment
-docker-compose --env-file .env.local up --build
+# Switch to postgres user
+sudo -u postgres psql
 
-# Test URLs:
-# - Frontend: http://localhost (nginx proxy)
-# - Backend API: http://localhost:8001/api
-# - Database: localhost:8000 (for debugging)
-
-# Clean up after testing
-docker-compose --env-file .env.local down -v
+# Create database and user
+CREATE DATABASE telegram_clone;
+CREATE USER deploy_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE telegram_clone TO deploy_user;
+\q
 ```
+
+### 3. User and Directory Setup
+
+```bash
+# Create deploy user
+sudo adduser deploy
+sudo usermod -aG sudo deploy
+
+# Create application directory
+sudo mkdir -p /home/deploy/telechat
+sudo chown deploy:deploy /home/deploy/telechat
+
+# Create web directory
+sudo mkdir -p /var/www/telechat/web
+sudo chown deploy:deploy /var/www/telechat/web
+```
+
+### 4. SSH Key Setup
+
+```bash
+# Generate SSH key pair locally
+ssh-keygen -t rsa -b 4096 -C "deploy@telegram-clone"
+
+# Copy public key to VPS
+ssh-copy-id deploy@your-vps-ip
+
+# Add private key to GitHub Secrets as VPS_SSH_KEY
+```
+
+### 5. Nginx Configuration
+
+Create `/etc/nginx/sites-available/telechat`:
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # Web application static files
+    location / {
+        root /var/www/telechat/web;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API proxy
+    location /api {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # WebSocket proxy
+    location /socket.io {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Enable the site:
+```bash
+sudo ln -s /etc/nginx/sites-available/telechat /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 6. Initial Code Deployment
+
+```bash
+# Clone repository
+cd /home/deploy
+git clone https://github.com/your-username/telegram-clone.git telechat
+cd telechat
+
+# Install dependencies
+pnpm install
+
+# Build server
+pnpm --filter server build
+
+# Set up database
+pnpm --filter server prisma migrate deploy
+
+# Start server with PM2
+pm2 start pnpm --name "telegram-server" -- --filter server start
+pm2 save
+pm2 startup
+```
+
+### 7. GitHub Repository Setup
+
+1. Add the required secrets to GitHub repository
+2. Ensure the `deploy.yml` workflow file is present
+3. Push changes to `master` branch to trigger first automated deployment
+
+## Monitoring and Maintenance
+
+### PM2 Management
+```bash
+# Check status
+pm2 status
+
+# View logs
+pm2 logs telegram-server
+
+# Restart service
+pm2 restart telegram-server
+
+# Monitor
+pm2 monit
+```
+
+### Database Maintenance
+```bash
+# Backup database
+pg_dump -U deploy_user telegram_clone > backup.sql
+
+# Restore database
+psql -U deploy_user telegram_clone < backup.sql
+```
+
+### Nginx Management
+```bash
+# Check status
+sudo systemctl status nginx
+
+# Test configuration
+sudo nginx -t
+
+# Reload configuration
+sudo systemctl reload nginx
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **PM2 process not starting**: Check server logs and ensure database is accessible
+2. **Web deployment fails**: Verify Nginx permissions and web root directory
+3. **Database connection issues**: Check PostgreSQL service status and connection string
+4. **SSH deployment fails**: Verify SSH key and VPS connectivity
+
+### Log Locations
+
+- **Server logs**: `pm2 logs telegram-server`
+- **Nginx logs**: `/var/log/nginx/access.log` and `/var/log/nginx/error.log`
+- **PostgreSQL logs**: `/var/log/postgresql/`
+
+## Security Considerations
+
+- Use SSH key authentication (no passwords)
+- Configure firewall to only allow necessary ports
+- Regular security updates
+- Database user with minimal required permissions
+- SSL/TLS certificates for HTTPS
+- Environment variables for sensitive data
