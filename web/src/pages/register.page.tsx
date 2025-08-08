@@ -102,7 +102,7 @@ export const RegisterPage = () => {
                     required
                     value={username}
                     onChange={(e) => {
-                      const value = e.target.value.toLowerCase();
+                      const value = e.target.value;
                       setUsername(value);
                       validateUsername(value);
                     }}
