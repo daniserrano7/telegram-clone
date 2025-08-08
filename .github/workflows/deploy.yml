@@ -53,7 +53,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Generate Prisma client
-        run: pnpm --filter server prisma generate
+        run: cd server && pnpm prisma generate
 
       - name: Build server
         run: pnpm --filter server build
