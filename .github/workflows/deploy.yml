@@ -87,9 +87,9 @@ jobs:
             JWT_SECRET="${{ secrets.JWT_SECRET }}"
             EOF
             
-            pnpm prisma generate
-            pnpm prisma migrate deploy
-            NODE_ENV=production pm2 restart telegram-server || NODE_ENV=production pm2 start npm --name "telegram-server" -- start
+            # Run database deployment (generate + migrate)
+            pnpm run db:deploy
+            pm2 restart telegram-server || pm2 start npm --name "telegram-server" -- run start:prod
             pm2 save
 
   deploy-web:
