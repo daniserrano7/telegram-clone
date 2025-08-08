@@ -1,0 +1,154 @@
+name: Deploy to Development Environment
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'server/**'
+      - 'web/**'
+      - 'shared/**'
+      - '.github/workflows/deploy-dev.yml'
+  workflow_dispatch:
+    inputs:
+      force_deploy_server:
+        description: 'Force deploy server even if no changes detected'
+        required: false
+        default: false
+        type: boolean
+      force_deploy_web:
+        description: 'Force deploy web even if no changes detected'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      server-changed: ${{ steps.changes.outputs.server || inputs.force_deploy_server }}
+      web-changed: ${{ steps.changes.outputs.web || inputs.force_deploy_web }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            server:
+              - 'server/**'
+              - 'shared/**'
+              - '.github/workflows/deploy-dev.yml'
+            web:
+              - 'web/**'
+              - 'shared/**'
+              - '.github/workflows/deploy-dev.yml'
+
+  deploy-server-dev:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.server-changed == 'true'
+    runs-on: ubuntu-latest
+    environment: DEV
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Generate Prisma client
+        run: cd server && pnpm prisma generate
+
+      - name: Build server
+        run: pnpm --filter server build
+
+      - name: Deploy server to VPS (DEV)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: 'server/dist,server/package.json,server/prisma,shared,server/node_modules/.prisma'
+          target: '/home/deploy/telechat-dev/'
+          overwrite: true
+
+      - name: Restart server on VPS (DEV)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /home/deploy/telechat-dev/server
+            pnpm install --prod --no-frozen-lockfile
+            
+            # Create .env.development file with secrets
+            cat > .env.development << EOF
+            NODE_ENV=development
+            DATABASE_URL="${{ secrets.DEV_DATABASE_URL }}"
+            PORT="${{ secrets.DEV_PORT }}"
+            ALLOWED_ORIGINS="${{ secrets.DEV_ALLOWED_ORIGINS }}"
+            JWT_SECRET="${{ secrets.DEV_JWT_SECRET }}"
+            EOF
+
+            # Run database deployment (generate + migrate)
+            pnpm run db:deploy
+            pm2 restart telechat-dev-server || pm2 start npm --name "telechat-dev-server" -- run start:prod
+            pm2 save
+
+  deploy-web-dev:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.web-changed == 'true'
+    runs-on: ubuntu-latest
+    environment: DEV
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter web build
+        env:
+          VITE_API_URL: ${{ secrets.DEV_VITE_API_URL }}
+          VITE_WS_URL: ${{ secrets.DEV_VITE_WS_URL }}
+          VITE_PORT: ${{ secrets.DEV_VITE_PORT }}
+
+      - name: Deploy web app to VPS (DEV)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: 'web/dist/*'
+          target: '/var/www/telechat-dev/web/'
+          overwrite: true
+          strip_components: 2
+
+  # Optional: Send notification on successful deployment
+  notify-dev:
+    needs: [deploy-server-dev, deploy-web-dev]
+    if: always() && (needs.deploy-server-dev.result == 'success' || needs.deploy-web-dev.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send success notification
+        run: echo "Development deployment completed successfully!"
