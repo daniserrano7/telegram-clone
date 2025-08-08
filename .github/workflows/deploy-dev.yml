@@ -89,14 +89,14 @@ jobs:
           script: |
             cd /home/deploy/telechat-dev/server
             pnpm install --prod --no-frozen-lockfile
-            
+
             # Create .env.development file with secrets
             cat > .env.development << EOF
             NODE_ENV=development
-            DATABASE_URL="${{ secrets.DEV_DATABASE_URL }}"
-            PORT="${{ secrets.DEV_PORT }}"
-            ALLOWED_ORIGINS="${{ secrets.DEV_ALLOWED_ORIGINS }}"
-            JWT_SECRET="${{ secrets.DEV_JWT_SECRET }}"
+            DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            PORT="${{ secrets.PORT }}"
+            ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}"
+            JWT_SECRET="${{ secrets.JWT_SECRET }}"
             EOF
 
             # Run database deployment (generate + migrate)
@@ -129,9 +129,9 @@ jobs:
       - name: Build web app
         run: pnpm --filter web build
         env:
-          VITE_API_URL: ${{ secrets.DEV_VITE_API_URL }}
-          VITE_WS_URL: ${{ secrets.DEV_VITE_WS_URL }}
-          VITE_PORT: ${{ secrets.DEV_VITE_PORT }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
+          VITE_PORT: ${{ secrets.VITE_PORT }}
 
       - name: Deploy web app to VPS (DEV)
         uses: appleboy/scp-action@v0.1.7
