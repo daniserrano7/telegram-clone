@@ -100,8 +100,8 @@ jobs:
             EOF
 
             # Run database deployment (generate + migrate)
-            pnpm run db:deploy
-            pm2 restart telechat-dev-server || pm2 start npm --name "telechat-dev-server" -- run start:prod
+            pnpm run db:deploy:dev
+            pm2 restart telechat-dev-server || pm2 start npm --name "telechat-dev-server" -- run start:dev
             pm2 save
 
   deploy-web-dev:

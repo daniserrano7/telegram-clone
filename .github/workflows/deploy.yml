@@ -77,7 +77,7 @@ jobs:
           script: |
             cd /home/deploy/telechat/server
             pnpm install --prod --no-frozen-lockfile
-            
+
             # Create .env.production file with secrets
             cat > .env.production << EOF
             NODE_ENV=production
