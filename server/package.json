@@ -12,7 +12,7 @@
     "start:dev": "dotenv -e .env.dev nest start --watch --host 0.0.0.0",
     "start:dev:test": "dotenv -e .env.test nest start --watch --host 0.0.0.0",
     "start:debug": "dotenv -e .env.dev nest start --debug --watch",
-    "start:prod": "dotenv -e .env.production node dist/server/src/main",
+    "start:prod": "nest start",
     "start:prod:migrate": "dotenv -e .env.production pnpm prisma generate && dotenv -e .env.production pnpm prisma migrate deploy && pnpm start:prod",
     "db:deploy": "dotenv -e .env.production pnpm prisma generate && dotenv -e .env.production pnpm prisma migrate deploy",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",

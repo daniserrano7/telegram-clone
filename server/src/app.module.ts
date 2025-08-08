@@ -17,7 +17,7 @@ import { HealthModule } from './health/health.module';
     HealthModule,
     ConfigModule.forRoot({
       envFilePath:
-        process.env.NODE_ENV === 'production' ? '.env.production' : '.env.dev',
+        process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
