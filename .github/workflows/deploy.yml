@@ -86,10 +86,10 @@ jobs:
             ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}"
             JWT_SECRET="${{ secrets.JWT_SECRET }}"
             EOF
-            
+
             # Run database deployment (generate + migrate)
             pnpm run db:deploy
-            pm2 restart telegram-server || pm2 start npm --name "telegram-server" -- run start:prod
+            pm2 restart telechat-server || pm2 start npm --name "telechat-server" -- run start:prod
             pm2 save
 
   deploy-web:
