@@ -7,3 +7,4 @@ server/.env.test
 server/uploads/avatars
 e2e/test-results
 .DS_Store
+web/coverage
