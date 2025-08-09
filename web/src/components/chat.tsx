@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState, Fragment } from 'react';
 import {
   HiOutlineMagnifyingGlass,
   HiOutlineViewColumns,
@@ -537,10 +537,28 @@ const Message = ({
     };
   }, [handleMessageVisible]);
 
-  const highlightText = (text: string, query: string) => {
-    if (!query) return text;
+  const renderMessageContent = (
+    text: string,
+    query?: string
+  ): React.ReactNode => {
+    // First split by lines to handle multiline
+    const lines = text.split('\n');
 
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return lines.map((line, lineIndex) => (
+      <Fragment key={lineIndex}>
+        {query ? highlightTextInLine(line, query) : line}
+        {lineIndex < lines.length - 1 && <br />}
+      </Fragment>
+    ));
+  };
+
+  const highlightTextInLine = (
+    line: string,
+    query: string
+  ): React.ReactNode => {
+    if (!query) return line;
+
+    const parts = line.split(new RegExp(`(${query})`, 'gi'));
     return parts.map((part, i) =>
       part.toLowerCase() === query.toLowerCase() ? (
         <span key={i} className="bg-yellow-200 text-black rounded px-0.5">
@@ -599,11 +617,12 @@ const Message = ({
           isCurrentMatch && 'ring-2 ring-primary'
         )}
       >
-        <p className="text-font">
-          {highlight && searchQuery
-            ? highlightText(message.content, searchQuery)
-            : message.content}
-        </p>
+        <div className="text-font">
+          {renderMessageContent(
+            message.content,
+            highlight ? searchQuery : undefined
+          )}
+        </div>
 
         {/* Timestamp and status with Telegram styling */}
         <div className="flex items-center justify-end gap-1 mt-0.5 ml-4 float-right">
@@ -652,22 +671,38 @@ const MessageInput = () => {
   const sendMessage = useChatStore((state) => state.sendMessage);
   const createChat = useChatStore((state) => state.createChat);
   const emitTypingStatus = useContactsStore((state) => state.emitTypingStatus);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
+    if (textareaRef.current) {
+      textareaRef.current.focus();
     }
   }, [activeChat?.id]);
+
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+
+    // Calculate new height (min 20px for single line, max 200px for ~8 lines)
+    const newHeight = Math.min(Math.max(textarea.scrollHeight, 44), 200);
+    textarea.style.height = `${newHeight}px`;
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [adjustTextareaHeight]);
 
   if (!activeChat) return null;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const input = e.currentTarget.querySelector('input');
-    if (!input) return;
+    const textarea = e.currentTarget.querySelector('textarea');
+    if (!textarea) return;
 
-    const content = input.value;
+    const content = textarea.value.trim();
     if (!content) return;
 
     const chatId = activeChat.id;
@@ -676,7 +711,8 @@ const MessageInput = () => {
         userIds: activeChat.members.map((member) => member.id),
         content,
       });
-      input.value = '';
+      textarea.value = '';
+      adjustTextareaHeight();
       return;
     }
 
@@ -686,32 +722,49 @@ const MessageInput = () => {
       console.error('Failed to send message', error);
     }
 
-    input.value = '';
+    textarea.value = '';
+    adjustTextareaHeight();
     emitTypingStatus(chatId, false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Send message on Enter (but allow Shift+Enter for new lines)
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const form = e.currentTarget.closest('form');
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+  };
+
+  const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget;
+    adjustTextareaHeight();
+
+    const chatId = activeChat.id;
+    if (!chatId) return;
+
+    const isTyping = textarea.value.trim().length > 0;
+    emitTypingStatus(chatId, isTyping);
   };
 
   return (
     <div className="p-4 bg-background-primary border-t border-border">
-      <form className="flex items-center space-x-4" onSubmit={handleSubmit}>
-        <input
-          ref={inputRef}
-          type="text"
+      <form className="flex items-end space-x-4" onSubmit={handleSubmit}>
+        <textarea
+          ref={textareaRef}
           placeholder="Write a message..."
           autoFocus
-          className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-3 px-4 rounded-lg focus:outline focus:outline-2 focus:ring-primary-light"
-          onChange={(e) => {
-            const chatId = activeChat.id;
-            console.log('Message input changed', chatId);
-
-            if (!chatId) return;
-
-            const isTyping = e.currentTarget.value.trim().length > 0;
-            emitTypingStatus(chatId, isTyping);
-          }}
+          rows={1}
+          className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-3 px-4 rounded-lg focus:outline focus:outline-2 focus:ring-primary-light resize-none overflow-y-auto min-h-[44px] max-h-[200px]"
+          style={{ scrollbarWidth: 'thin' }}
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
         />
         <button
           type="submit"
-          className="p-3 bg-primary hover:bg-primary/80 rounded-full transition-colors"
+          className="p-3 bg-primary hover:bg-primary/80 rounded-full transition-colors flex-shrink-0"
         >
           <IoSendSharp className="w-5 h-5 text-font-primary-contrast" />
         </button>
