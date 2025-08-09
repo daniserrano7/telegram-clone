@@ -1,0 +1,41 @@
+{
+  "name": "Telechat - Modern Messaging App",
+  "short_name": "Telechat",
+  "description": "Experience seamless real-time messaging with Telechat. Connect with friends and stay in touch.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a202c",
+  "theme_color": "#1a202c",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["social", "communication"],
+  "icons": [
+    {
+      "src": "/logo_64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo_256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Chat",
+      "short_name": "New Chat",
+      "description": "Start a new conversation",
+      "url": "/chat",
+      "icons": [
+        {
+          "src": "/logo_64.png",
+          "sizes": "64x64"
+        }
+      ]
+    }
+  ]
+}
