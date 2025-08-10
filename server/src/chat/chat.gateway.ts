@@ -17,6 +17,7 @@ import { UserId } from '@shared/user.dto';
 import { WsAuthGuard } from 'src/auth/auth.guard';
 import { Events } from '@shared/gateway.dto';
 import { UserStatusService } from '../user/user-status.service';
+import { NotificationService } from '../notification/notification.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 // Get allowed origins from environment variable or use defaults
@@ -46,6 +47,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
     private readonly userStatusService: UserStatusService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   afterInit() {
@@ -221,6 +223,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         content,
       );
       this.server.to(`chat_${chatId}`).emit('message', message);
+
+      // Get chat members for push notifications
+      try {
+        const chat = await this.chatService.getChat(chatId);
+        const recipientIds = chat.members.map(member => member.id);
+        
+        // Send push notifications to offline/background users
+        await this.notificationService.sendNewMessageNotification(
+          userId,
+          recipientIds,
+          content,
+          chatId,
+        );
+      } catch (error) {
+        this.logger.warn(`Failed to send push notifications for chat ${chatId}:`, error.message);
+      }
 
       return { status: 'success', message };
     } catch (error) {

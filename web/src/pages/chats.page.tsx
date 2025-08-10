@@ -12,11 +12,13 @@ export const ChatsPage = () => {
   const navigate = useNavigate();
   const { chatId } = useParams<{ chatId?: string }>();
   const user = useAuthStore((state) => state.user);
-  const getActiveChatFromUrl = useChatStore((state) => state.getActiveChatFromUrl);
+  const getActiveChatFromUrl = useChatStore(
+    (state) => state.getActiveChatFromUrl
+  );
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const fetchChat = useChatStore((state) => state.fetchChat);
   const activeChat = useChatStore((state) => state.activeChat);
-  
+
   const [isChatInfo, setIsChatInfo] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
   const [showChat, setShowChat] = useState(false);
@@ -24,7 +26,7 @@ export const ChatsPage = () => {
   // Sync active chat with URL params
   useEffect(() => {
     const chatFromUrl = getActiveChatFromUrl(chatId);
-    
+
     if (chatId && !chatFromUrl) {
       // Chat ID in URL but not found in store - try to fetch it
       const chatIdNum = parseInt(chatId, 10);
@@ -37,10 +39,14 @@ export const ChatsPage = () => {
         setActiveChat(chatFromUrl);
       }
       setShowChat(true);
-    } else if (!chatId && activeChat) {
-      // No chat ID in URL but we have active chat - clear it
+    } else if (!chatId && activeChat && activeChat.id) {
+      // No chat ID in URL but we have active chat with ID - clear it
+      // Don't clear new chats (activeChat without ID)
       setActiveChat(null);
       setShowChat(false);
+    } else if (!chatId && activeChat && !activeChat.id) {
+      // New chat without ID - show it
+      setShowChat(true);
     }
   }, [chatId, getActiveChatFromUrl, fetchChat, setActiveChat, activeChat]);
 
@@ -73,14 +79,14 @@ export const ChatsPage = () => {
           isMobileView && showChat ? 'hidden' : 'block'
         )}
       >
-        <Sidebar 
+        <Sidebar
           onChatSelect={(chatId?: number) => {
             if (chatId) {
               navigate(`/chats/${chatId}`);
             } else {
               setShowChat(true);
             }
-          }} 
+          }}
         />
       </div>
       <div
@@ -107,7 +113,7 @@ export const ChatsPage = () => {
           <ChatInfo />
         </div>
       </div>
-      
+
       {/* Notification Permission Request */}
       <NotificationPermissionRequest />
     </main>

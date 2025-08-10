@@ -6,6 +6,7 @@ import { ChatGateway } from './chat.gateway';
 import { UploadService } from '../upload/upload.service';
 import { UserStatusService } from '../user/user-status.service';
 import { ScheduleModule } from '@nestjs/schedule';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
@@ -16,6 +17,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     UserService,
     UploadService,
     UserStatusService,
+    NotificationService,
   ],
   exports: [ChatService],
 })

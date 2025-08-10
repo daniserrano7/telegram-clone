@@ -39,6 +39,7 @@
     "@nestjs/schedule": "^5.0.1",
     "@nestjs/websockets": "^10.4.15",
     "@prisma/client": "6.4.1",
+    "@types/web-push": "^3.6.4",
     "bcryptjs": "^2.4.3",
     "class-validator": "^0.14.1",
     "dotenv": "^16.4.7",
@@ -50,7 +51,8 @@
     "resource": "^0.8.1",
     "rxjs": "^7.8.2",
     "socket.io": "^4.8.1",
-    "vitest-mock-extended": "^2.0.2"
+    "vitest-mock-extended": "^2.0.2",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",

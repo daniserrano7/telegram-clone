@@ -26,7 +26,6 @@ self.addEventListener('activate', (event) => {
 
 // Push event - handle incoming push notifications
 self.addEventListener('push', (event) => {
-  console.log('Push event received:', event);
 
   let notificationData = {
     title: 'New Message',
@@ -64,17 +63,25 @@ self.addEventListener('push', (event) => {
     }
   }
 
+  // Firefox-compatible notification options
+  const firefoxOptions = {
+    body: notificationData.body,
+    icon: notificationData.icon,
+    tag: notificationData.tag,
+    data: notificationData.data
+  };
+
+  // Add badge and actions only if supported (Chrome-specific features)
+  const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+  if (!isFirefox) {
+    firefoxOptions.badge = notificationData.badge;
+    firefoxOptions.actions = notificationData.actions;
+    firefoxOptions.requireInteraction = notificationData.requireInteraction;
+  }
+
   const promiseChain = self.registration.showNotification(
     notificationData.title,
-    {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      tag: notificationData.tag,
-      requireInteraction: notificationData.requireInteraction,
-      actions: notificationData.actions,
-      data: notificationData.data
-    }
+    firefoxOptions
   );
 
   event.waitUntil(promiseChain);

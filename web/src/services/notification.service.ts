@@ -1,3 +1,5 @@
+import { localStorageService } from './local-storage.service';
+
 interface NotificationServiceConfig {
   vapidPublicKey: string;
 }
@@ -8,6 +10,13 @@ interface PushSubscriptionData {
     p256dh: string;
     auth: string;
   };
+}
+
+// API response types
+interface ApiResponse<T = any> {
+  status: 'success' | 'error';
+  message: string;
+  data?: T;
 }
 
 class NotificationService {
@@ -27,9 +36,12 @@ class NotificationService {
     }
 
     try {
-      this.serviceWorkerRegistration = await navigator.serviceWorker.register('/sw.js', {
-        scope: '/'
-      });
+      this.serviceWorkerRegistration = await navigator.serviceWorker.register(
+        '/sw.js',
+        {
+          scope: '/',
+        }
+      );
 
       console.log('Service Worker registered:', this.serviceWorkerRegistration);
 
@@ -37,7 +49,6 @@ class NotificationService {
       this.serviceWorkerRegistration.addEventListener('updatefound', () => {
         console.log('New Service Worker version found');
       });
-
     } catch (error) {
       console.error('Service Worker registration failed:', error);
     }
@@ -50,7 +61,11 @@ class NotificationService {
 
   // Check if browser supports notifications
   isNotificationSupported(): boolean {
-    return 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+    return (
+      'Notification' in window &&
+      'serviceWorker' in navigator &&
+      'PushManager' in window
+    );
   }
 
   // Check current permission status
@@ -85,20 +100,29 @@ class NotificationService {
 
     try {
       // Check for existing subscription
-      this.pushSubscription = await this.serviceWorkerRegistration.pushManager.getSubscription();
+      this.pushSubscription =
+        await this.serviceWorkerRegistration.pushManager.getSubscription();
 
       if (!this.pushSubscription) {
         // Create new subscription
-        this.pushSubscription = await this.serviceWorkerRegistration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey)
-        });
+        this.pushSubscription =
+          await this.serviceWorkerRegistration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: this.urlBase64ToUint8Array(
+              this.vapidPublicKey
+            ),
+          });
       }
 
-      const subscriptionData = this.extractSubscriptionData(this.pushSubscription);
-      console.log('Push subscription created:', subscriptionData);
-      return subscriptionData;
+      const subscriptionData = this.extractSubscriptionData(
+        this.pushSubscription
+      );
 
+      // Save subscription to backend
+      await this.saveSubscriptionToBackend(subscriptionData);
+
+      console.log('Push subscription created and saved:', subscriptionData);
+      return subscriptionData;
     } catch (error) {
       console.error('Failed to subscribe to push notifications:', error);
       return null;
@@ -109,6 +133,13 @@ class NotificationService {
   async unsubscribeFromPush(): Promise<boolean> {
     if (this.pushSubscription) {
       try {
+        const subscriptionData = this.extractSubscriptionData(
+          this.pushSubscription
+        );
+
+        // Remove from backend first
+        await this.removeSubscriptionFromBackend(subscriptionData.endpoint);
+
         const unsubscribed = await this.pushSubscription.unsubscribe();
         this.pushSubscription = null;
         console.log('Unsubscribed from push notifications');
@@ -128,7 +159,8 @@ class NotificationService {
     }
 
     try {
-      const subscription = await this.serviceWorkerRegistration.pushManager.getSubscription();
+      const subscription =
+        await this.serviceWorkerRegistration.pushManager.getSubscription();
       return subscription ? this.extractSubscriptionData(subscription) : null;
     } catch (error) {
       console.error('Failed to get current subscription:', error);
@@ -137,7 +169,10 @@ class NotificationService {
   }
 
   // Show local notification (for testing)
-  async showLocalNotification(title: string, options?: NotificationOptions): Promise<void> {
+  async showLocalNotification(
+    title: string,
+    options?: NotificationOptions
+  ): Promise<void> {
     if (this.getPermissionStatus() !== 'granted') {
       throw new Error('Notification permission not granted');
     }
@@ -147,10 +182,13 @@ class NotificationService {
       icon: '/favicon.ico',
       badge: '/favicon.ico',
       tag: 'local-notification',
-      requireInteraction: false
+      requireInteraction: false,
     };
 
-    const notification = new Notification(title, { ...defaultOptions, ...options });
+    const notification = new Notification(title, {
+      ...defaultOptions,
+      ...options,
+    });
 
     notification.onclick = () => {
       window.focus();
@@ -165,7 +203,7 @@ class NotificationService {
 
   // Utility: Convert VAPID key to Uint8Array
   private urlBase64ToUint8Array(base64String: string): Uint8Array {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding)
       .replace(/-/g, '+')
       .replace(/_/g, '/');
@@ -180,7 +218,9 @@ class NotificationService {
   }
 
   // Utility: Extract subscription data
-  private extractSubscriptionData(subscription: PushSubscription): PushSubscriptionData {
+  private extractSubscriptionData(
+    subscription: PushSubscription
+  ): PushSubscriptionData {
     const p256dh = subscription.getKey('p256dh');
     const auth = subscription.getKey('auth');
 
@@ -188,8 +228,8 @@ class NotificationService {
       endpoint: subscription.endpoint,
       keys: {
         p256dh: p256dh ? this.arrayBufferToBase64(p256dh) : '',
-        auth: auth ? this.arrayBufferToBase64(auth) : ''
-      }
+        auth: auth ? this.arrayBufferToBase64(auth) : '',
+      },
     };
   }
 
@@ -201,6 +241,109 @@ class NotificationService {
       binary += String.fromCharCode(bytes[i]);
     }
     return window.btoa(binary);
+  }
+
+  // Backend API Methods
+  private async saveSubscriptionToBackend(
+    subscriptionData: PushSubscriptionData
+  ): Promise<void> {
+    const user = localStorageService.get('user');
+    const token = user?.token;
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/notifications/subscribe`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(subscriptionData),
+        }
+      );
+
+      const result: ApiResponse = await response.json();
+
+      if (!response.ok || result.status === 'error') {
+        throw new Error(result.message || 'Failed to save subscription');
+      }
+
+      console.log('Subscription saved to backend successfully');
+    } catch (error) {
+      console.error('Failed to save subscription to backend:', error);
+      throw error;
+    }
+  }
+
+  private async removeSubscriptionFromBackend(endpoint: string): Promise<void> {
+    const user = localStorageService.get('user');
+    const token = user?.token;
+    if (!token) {
+      console.warn('No authentication token found for unsubscribe');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/notifications/unsubscribe`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ endpoint }),
+        }
+      );
+
+      const result: ApiResponse = await response.json();
+
+      if (!response.ok || result.status === 'error') {
+        throw new Error(result.message || 'Failed to remove subscription');
+      }
+
+      console.log('Subscription removed from backend successfully');
+    } catch (error) {
+      console.error('Failed to remove subscription from backend:', error);
+      // Don't throw error here to allow local unsubscribe to proceed
+    }
+  }
+
+  // Send test notification via backend
+  async sendTestNotification(): Promise<void> {
+    const user = localStorageService.get('user');
+    const token = user?.token;
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/notifications/test`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const result: ApiResponse = await response.json();
+
+      if (!response.ok || result.status === 'error') {
+        throw new Error(result.message || 'Failed to send test notification');
+      }
+
+      console.log('Test notification sent via backend');
+    } catch (error) {
+      console.error('Failed to send test notification:', error);
+      throw error;
+    }
   }
 }
 

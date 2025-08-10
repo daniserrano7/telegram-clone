@@ -203,15 +203,23 @@ export const NotificationStatus = () => {
     if (permission !== 'granted') return;
 
     try {
-      await notificationService.showLocalNotification(
-        'Test Notification',
-        {
-          body: 'This is a test notification to verify everything is working correctly.',
-          icon: '/favicon.ico'
-        }
-      );
+      // Try backend notification first (real push notification)
+      await notificationService.sendTestNotification();
     } catch (error) {
-      console.error('Failed to show test notification:', error);
+      console.error('Backend test notification failed, falling back to local:', error);
+      
+      // Fallback to local notification
+      try {
+        await notificationService.showLocalNotification(
+          'Test Notification (Local)',
+          {
+            body: 'This is a local test notification. Backend notifications may not be configured.',
+            icon: '/favicon.ico'
+          }
+        );
+      } catch (localError) {
+        console.error('Failed to show local test notification:', localError);
+      }
     }
   };
 
