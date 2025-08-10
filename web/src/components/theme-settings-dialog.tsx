@@ -3,6 +3,7 @@ import { useThemeStore, Accent } from 'src/stores/theme.store';
 import { HiOutlineXMark } from 'react-icons/hi2';
 import cx from 'classix';
 import 'src/styles/animations.css';
+import { useAuthStore } from 'src/stores/auth.store';
 
 const ACCENT_COLORS: { name: Accent; color: string }[] = [
   { name: 'blue', color: '#2481cc' },
@@ -18,7 +19,7 @@ export const ThemeSettingsDialog = ({
   onClose,
 }: ThemeSettingsDialogProps) => {
   const { accent, setAccent } = useThemeStore();
-
+  const user = useAuthStore((state) => state.user);
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
@@ -108,7 +109,7 @@ export const ThemeSettingsDialog = ({
                         ?.color,
                     }}
                   >
-                    Daniel
+                    {user?.username}
                   </span>
                 </div>
                 <div className="flex justify-between">
