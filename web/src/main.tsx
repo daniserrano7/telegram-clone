@@ -9,6 +9,9 @@ import { App } from './App';
 import { ProtectedRoute } from './router/protected-route';
 import './index.css';
 
+// Initialize notification configuration
+import './config/notification.config';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App>

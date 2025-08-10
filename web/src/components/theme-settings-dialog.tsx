@@ -4,6 +4,7 @@ import { HiOutlineXMark } from 'react-icons/hi2';
 import cx from 'classix';
 import 'src/styles/animations.css';
 import { useAuthStore } from 'src/stores/auth.store';
+import { NotificationStatus } from './notification-permission-request';
 
 const ACCENT_COLORS: { name: Accent; color: string }[] = [
   { name: 'blue', color: '#2481cc' },
@@ -48,6 +49,14 @@ export const ThemeSettingsDialog = ({
 
           {/* Content */}
           <div className="p-6">
+            {/* Notifications Section */}
+            <div className="mb-8">
+              <h3 className="text-sm font-medium text-font-subtle mb-4">
+                Notifications
+              </h3>
+              <NotificationStatus />
+            </div>
+
             <h3 className="text-sm font-medium text-font-subtle mb-4">
               Themes
             </h3>

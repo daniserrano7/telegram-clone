@@ -6,6 +6,7 @@ import { useChatStore } from '../stores/chat.store';
 import { Sidebar } from 'src/components/sidebar';
 import { Chat } from 'src/components/chat';
 import { ChatInfo } from 'src/components/chat-info';
+import { NotificationPermissionRequest } from '../components/notification-permission-request';
 
 export const ChatsPage = () => {
   const navigate = useNavigate();
@@ -106,6 +107,9 @@ export const ChatsPage = () => {
           <ChatInfo />
         </div>
       </div>
+      
+      {/* Notification Permission Request */}
+      <NotificationPermissionRequest />
     </main>
   );
 };
