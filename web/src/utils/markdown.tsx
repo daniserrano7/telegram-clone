@@ -43,7 +43,7 @@ export const parseMarkdown = (text: string): React.ReactNode => {
     content: React.ReactNode;
   }> = [];
 
-  patterns.forEach((pattern, patternIndex) => {
+  patterns.forEach((pattern) => {
     let match;
     const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
     
@@ -51,7 +51,7 @@ export const parseMarkdown = (text: string): React.ReactNode => {
       allMatches.push({
         index: match.index,
         length: match[0].length,
-        content: pattern.render(match[1], `${patternIndex}-${allMatches.length}`)
+        content: pattern.render(match[1], allMatches.length)
       });
     }
   });

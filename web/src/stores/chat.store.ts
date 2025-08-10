@@ -25,11 +25,12 @@ interface ChatStore {
   chats: Chat[];
   activeChat: ActiveChat | null;
   fetchChat: (chatId: number) => void;
-  createChat: (chat: CreateChatRequestDto) => void;
+  createChat: (chat: CreateChatRequestDto) => Promise<{ chatId?: number }>;
   sendMessage: (chatId: number, content: string) => void;
-  setActiveChat: (chat: ActiveChat) => void;
-  openChatWithUser: (userId: number) => void;
+  setActiveChat: (chat: ActiveChat | null) => void;
+  openChatWithUser: (userId: number) => Promise<{ chatId?: number }>;
   getChatPartner: (chat: ActiveChat) => User | undefined;
+  getActiveChatFromUrl: (chatId?: string) => ActiveChat | null;
   registerEvents: (user: User) => void;
 }
 
@@ -127,7 +128,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       if (!userId) {
         set({ errorMsg: 'User not logged in' });
-        return;
+        return { chatId: undefined };
       } else {
         set({ errorMsg: '' });
       }
@@ -136,7 +137,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       if (result.status === 'error') {
         set({ errorMsg: 'Failed to create chat' });
-        return;
+        return { chatId: undefined };
       }
 
       const { data: chat } = result;
@@ -153,11 +154,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           messages: chat.messages || [],
         },
       });
+      
+      return { chatId: chat.id };
     } catch (error) {
       console.error('Failed to create chat', error);
       const msg =
         error instanceof Error ? error.message : 'An unknown error occurred';
       set({ errorMsg: msg });
+      return { chatId: undefined };
     }
   },
   sendMessage: async (chatId: number, content: string) => {
@@ -208,7 +212,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       }
     );
   },
-  setActiveChat: (chat: ActiveChat) => set({ activeChat: chat }),
+  setActiveChat: (chat: ActiveChat | null) => set({ activeChat: chat }),
   openChatWithUser: async (userId: number) => {
     try {
       const foundChat = get().chats.find(
@@ -219,14 +223,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       if (foundChat) {
         get().setActiveChat(foundChat);
-        return;
+        return { chatId: foundChat.id };
       }
 
       const result = await apiService.getUser(userId);
 
       if (result.status === 'error') {
         console.error(result.errorMsg);
-        return;
+        return { chatId: undefined };
       }
 
       const user = result.data;
@@ -234,23 +238,34 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       if (!ownUser) {
         console.error('User not logged in');
-        return;
+        return { chatId: undefined };
       }
 
       get().setActiveChat({
         members: [ownUser, user],
         messages: [],
       });
+      
+      return { chatId: undefined }; // No chatId yet for new chats
     } catch (error) {
       console.error('Failed to open chat with user', error);
       const msg =
         error instanceof Error ? error.message : 'An unknown error occurred';
       set({ errorMsg: msg });
+      return { chatId: undefined };
     }
   },
   getChatPartner: (chat: ActiveChat) => {
     const userId = useAuthStore.getState().user?.id;
     return chat.members.find((member) => member.id !== userId);
+  },
+  getActiveChatFromUrl: (chatId?: string) => {
+    if (!chatId) return null;
+    
+    const chatIdNum = parseInt(chatId, 10);
+    if (isNaN(chatIdNum)) return null;
+    
+    return get().chats.find((chat) => chat.id === chatIdNum) || null;
   },
   registerEvents: (user: User) => {
     // Listen for message status changes

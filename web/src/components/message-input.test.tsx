@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Test component that mimics MessageInput behavior
@@ -83,7 +83,6 @@ const TestMessageInput = () => {
   );
 };
 
-import React from 'react';
 
 describe('MessageInput Component', () => {
   const user = userEvent.setup();
@@ -147,7 +146,7 @@ describe('MessageInput Component', () => {
       const textarea = screen.getByTestId('message-input') as HTMLTextAreaElement;
       
       // Get initial height
-      const initialHeight = textarea.style.height;
+      textarea.style.height;
       
       // Type a long message that should cause height increase
       const longMessage = 'This is a very long message that should cause the textarea to expand in height because it contains a lot of text content';
