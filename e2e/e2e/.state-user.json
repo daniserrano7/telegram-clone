@@ -6,7 +6,7 @@
       "localStorage": [
         {
           "name": "user",
-          "value": "{\"user\":{\"id\":293,\"username\":\"e2e_fd7f8cb6b\",\"avatarUrl\":null,\"bio\":null,\"onlineStatus\":\"ONLINE\",\"lastConnection\":\"2025-08-09T15:45:15.442Z\",\"createdAt\":\"2025-08-09T15:45:15.442Z\",\"updatedAt\":\"2025-08-09T15:45:15.442Z\",\"deletedAt\":null},\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjkzLCJpYXQiOjE3NTQ3NTQzMTUsImV4cCI6MTc4NjI5MDMxNX0.fuR3uV-buT-wBRJgqXUUvDVNuXbE7FOu8x-YPWjkEKA\"}"
+          "value": "{\"user\":{\"id\":329,\"username\":\"e2e_8331e493b\",\"avatarUrl\":null,\"bio\":null,\"onlineStatus\":\"ONLINE\",\"lastConnection\":\"2025-08-10T11:18:54.124Z\",\"createdAt\":\"2025-08-10T11:18:54.124Z\",\"updatedAt\":\"2025-08-10T11:18:54.124Z\",\"deletedAt\":null},\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzI5LCJpYXQiOjE3NTQ4MjQ3MzQsImV4cCI6MTc4NjM2MDczNH0.rP57NSYTDJ9lufpxwmCm-8lM0iAl4JyOMb0sumd1TK8\"}"
         }
       ]
     }

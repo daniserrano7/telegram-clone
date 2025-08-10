@@ -18,7 +18,7 @@ export const ThemeSettingsDialog = ({
   isOpen,
   onClose,
 }: ThemeSettingsDialogProps) => {
-  const { accent, setAccent } = useThemeStore();
+  const { accent, setAccent, theme, setTheme } = useThemeStore();
   const user = useAuthStore((state) => state.user);
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -52,17 +52,25 @@ export const ThemeSettingsDialog = ({
               Themes
             </h3>
             <div className="grid grid-cols-4 gap-3 mb-8">
-              <div>
-                <div className="relative hover:bg-elevation-hover transition-colors aspect-square rounded-lg bg-[#8BC34A]/10 border border-border cursor-pointer">
+              <button onClick={() => setTheme('light')}>
+                <div className={cx(
+                  "relative hover:bg-elevation-hover transition-colors aspect-square rounded-lg bg-[#8BC34A]/10 cursor-pointer",
+                  theme === 'light' ? "border-2 border-primary" : "border border-border"
+                )}>
                   <div className="absolute inset-2 rounded bg-white"></div>
                   <div className="absolute bottom-2 left-2 right-2 h-3 rounded bg-[#8BC34A]/20"></div>
                   <div className="absolute top-2 left-2 w-12 h-2 rounded bg-[#8BC34A]/20"></div>
+                  {theme === 'light' && (
+                    <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-white"></div>
+                    </div>
+                  )}
                 </div>
                 <p className="text-sm mt-1 text-font-subtle text-center">
                   Light
                 </p>
-              </div>
-              <div>
+              </button>
+              {/* <div>
                 <div className="relative hover:bg-elevation-hover transition-colors aspect-square rounded-lg bg-[#8BC34A]/10 border border-border cursor-pointer">
                   <div className="absolute inset-2 rounded bg-[#8BC34A]/10"></div>
                   <div className="absolute bottom-2 left-2 right-2 h-3 rounded bg-[#8BC34A]/20"></div>
@@ -71,8 +79,8 @@ export const ThemeSettingsDialog = ({
                 <p className="text-sm mt-1 text-font-subtle text-center">
                   Light
                 </p>
-              </div>
-              <div>
+              </div> */}
+              {/* <div>
                 <div className="relative hover:bg-elevation-hover transition-colors aspect-square rounded-lg bg-[#795548]/20 border border-border cursor-pointer">
                   <div className="absolute inset-2 rounded bg-[#795548]/10"></div>
                   <div className="absolute bottom-2 left-2 right-2 h-3 rounded bg-[#ef4444]/20"></div>
@@ -81,17 +89,25 @@ export const ThemeSettingsDialog = ({
                 <p className="text-sm mt-1 text-font-subtle text-center">
                   Dark
                 </p>
-              </div>
-              <div>
-                <div className="relative hover:bg-elevation-hover transition-colors aspect-square rounded-lg bg-[#263238] border border-border cursor-pointer">
+              </div> */}
+              <button onClick={() => setTheme('dark')}>
+                <div className={cx(
+                  "relative hover:bg-elevation-hover transition-colors aspect-square rounded-lg bg-[#263238] cursor-pointer",
+                  theme === 'dark' ? "border-2 border-primary" : "border border-border"
+                )}>
                   <div className="absolute inset-2 rounded bg-[#37474F]"></div>
                   <div className="absolute bottom-2 left-2 right-2 h-3 rounded bg-[#78909C]/20"></div>
                   <div className="absolute top-2 left-2 w-12 h-2 rounded bg-[#78909C]/20"></div>
+                  {theme === 'dark' && (
+                    <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-white"></div>
+                    </div>
+                  )}
                 </div>
                 <p className="text-sm mt-1 text-font-subtle text-center">
                   Dark
                 </p>
-              </div>
+              </button>
             </div>
 
             <h3 className="text-sm font-medium text-font-subtle mb-4">
