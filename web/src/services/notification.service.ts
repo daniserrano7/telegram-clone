@@ -111,7 +111,7 @@ class NotificationService {
             userVisibleOnly: true,
             applicationServerKey: this.urlBase64ToUint8Array(
               this.vapidPublicKey
-            ),
+            ) as any,
           });
       }
 
@@ -224,8 +224,8 @@ class NotificationService {
   private extractSubscriptionData(
     subscription: PushSubscription
   ): PushSubscriptionData {
-    const p256dh = subscription.getKey('p256dh');
-    const auth = subscription.getKey('auth');
+    const p256dh = subscription.getKey('p256dh') as any;
+    const auth = subscription.getKey('auth') as any;
 
     return {
       endpoint: subscription.endpoint,
@@ -237,21 +237,10 @@ class NotificationService {
   }
 
   // Utility: Convert ArrayBuffer to base64
-  private arrayBufferToBase64(buffer: ArrayBuffer | ArrayBufferLike | null): string {
+  private arrayBufferToBase64(buffer: any): string {
     if (!buffer) return '';
     
-    // Handle both ArrayBuffer and SharedArrayBuffer cases for CI compatibility
-    let arrayBuffer: ArrayBuffer;
-    if (buffer instanceof ArrayBuffer) {
-      arrayBuffer = buffer;
-    } else if ('slice' in buffer && typeof buffer.slice === 'function') {
-      // For SharedArrayBuffer or other ArrayBufferLike types - use unknown first
-      arrayBuffer = (buffer.slice(0) as unknown) as ArrayBuffer;
-    } else {
-      return '';
-    }
-    
-    const bytes = new Uint8Array(arrayBuffer);
+    const bytes = new Uint8Array(buffer);
     let binary = '';
     for (let i = 0; i < bytes.byteLength; i++) {
       binary += String.fromCharCode(bytes[i]);
