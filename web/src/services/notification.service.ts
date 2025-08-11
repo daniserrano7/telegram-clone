@@ -210,7 +210,9 @@ class NotificationService {
       .replace(/_/g, '/');
 
     const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
+    // Create ArrayBuffer first, then Uint8Array to ensure proper typing
+    const buffer = new ArrayBuffer(rawData.length);
+    const outputArray = new Uint8Array(buffer);
 
     for (let i = 0; i < rawData.length; ++i) {
       outputArray[i] = rawData.charCodeAt(i);
@@ -243,8 +245,8 @@ class NotificationService {
     if (buffer instanceof ArrayBuffer) {
       arrayBuffer = buffer;
     } else if ('slice' in buffer && typeof buffer.slice === 'function') {
-      // For SharedArrayBuffer or other ArrayBufferLike types
-      arrayBuffer = buffer.slice(0) as ArrayBuffer;
+      // For SharedArrayBuffer or other ArrayBufferLike types - use unknown first
+      arrayBuffer = (buffer.slice(0) as unknown) as ArrayBuffer;
     } else {
       return '';
     }
