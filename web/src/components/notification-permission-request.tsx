@@ -15,9 +15,10 @@ export const NotificationPermissionRequest = ({
   onPermissionGranted,
   onPermissionDenied,
   showAsModal = false,
-  autoShow = true
+  autoShow = true,
 }: NotificationPermissionRequestProps) => {
-  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [permission, setPermission] =
+    useState<NotificationPermission>('default');
   const [isVisible, setIsVisible] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
@@ -34,7 +35,11 @@ export const NotificationPermissionRequest = ({
     setPermission(currentPermission);
 
     // Auto show if permission is default and autoShow is enabled
-    if (autoShow && currentPermission === 'default' && notificationConfig.isConfigured()) {
+    if (
+      autoShow &&
+      currentPermission === 'default' &&
+      notificationConfig.isConfigured()
+    ) {
       setIsVisible(true);
     }
   }, [autoShow]);
@@ -72,20 +77,6 @@ export const NotificationPermissionRequest = ({
     onPermissionDenied?.();
   };
 
-  const handleTestNotification = async () => {
-    try {
-      await notificationService.showLocalNotification(
-        'Test Notification',
-        {
-          body: 'This is a test notification from Telegram Clone',
-          icon: '/favicon.ico'
-        }
-      );
-    } catch (error) {
-      console.error('Failed to show test notification:', error);
-    }
-  };
-
   // Don't render if not supported, not configured, or not visible
   if (!isSupported || !notificationConfig.isConfigured() || !isVisible) {
     return null;
@@ -104,15 +95,16 @@ export const NotificationPermissionRequest = ({
             <HiBell className="w-6 h-6 text-primary" />
           </div>
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-medium text-font mb-2">
             Enable Notifications
           </h3>
           <p className="text-sm text-font-subtle mb-4">
-            Get notified instantly when you receive new messages, even when the app is closed.
+            Get notified instantly when you receive new messages, even when the
+            app is closed.
           </p>
-          
+
           <div className="flex gap-3">
             <button
               onClick={handleRequestPermission}
@@ -131,7 +123,7 @@ export const NotificationPermissionRequest = ({
                 'Enable Notifications'
               )}
             </button>
-            
+
             <button
               onClick={handleDismiss}
               className="px-4 py-2 rounded-lg font-medium text-sm border border-border text-font-subtle hover:bg-elevation-hover transition-colors"
@@ -169,16 +161,13 @@ export const NotificationPermissionRequest = ({
     );
   }
 
-  return (
-    <div className="fixed bottom-4 right-4 z-40 max-w-md">
-      {content}
-    </div>
-  );
+  return <div className="fixed bottom-4 right-4 z-40 max-w-md">{content}</div>;
 };
 
 // Permission status indicator component
 export const NotificationStatus = () => {
-  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [permission, setPermission] =
+    useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
@@ -206,15 +195,18 @@ export const NotificationStatus = () => {
       // Try backend notification first (real push notification)
       await notificationService.sendTestNotification();
     } catch (error) {
-      console.error('Backend test notification failed, falling back to local:', error);
-      
+      console.error(
+        'Backend test notification failed, falling back to local:',
+        error
+      );
+
       // Fallback to local notification
       try {
         await notificationService.showLocalNotification(
           'Test Notification (Local)',
           {
             body: 'This is a local test notification. Backend notifications may not be configured.',
-            icon: '/favicon.ico'
+            icon: '/favicon.ico',
           }
         );
       } catch (localError) {
@@ -248,7 +240,9 @@ export const NotificationStatus = () => {
           </div>
           {permission === 'granted' && (
             <div className="text-font-subtle">
-              {isSubscribed ? 'Push notifications active' : 'Push notifications inactive'}
+              {isSubscribed
+                ? 'Push notifications active'
+                : 'Push notifications inactive'}
             </div>
           )}
         </div>
