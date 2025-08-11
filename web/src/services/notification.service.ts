@@ -40,6 +40,7 @@ class NotificationService {
         '/sw.js',
         {
           scope: '/',
+          updateViaCache: 'none' // Force service worker updates in Chrome
         }
       );
 

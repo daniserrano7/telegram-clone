@@ -26,6 +26,7 @@ self.addEventListener('activate', (event) => {
 
 // Push event - handle incoming push notifications
 self.addEventListener('push', (event) => {
+  console.log('Push event received:', event);
 
   let notificationData = {
     title: 'New Message',
@@ -55,7 +56,7 @@ self.addEventListener('push', (event) => {
         title: data.title || notificationData.title,
         body: data.body || notificationData.body,
         icon: data.icon || notificationData.icon,
-        tag: data.tag || `message-${data.chatId || Date.now()}`,
+        tag: data.tag || `message-${data.chatId || 'unknown'}-${Date.now()}`,
         data: data // Store additional data for click handling
       };
     } catch (error) {
@@ -63,26 +64,58 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  // Firefox-compatible notification options
-  const firefoxOptions = {
+  // Browser-specific notification options
+  const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+  const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
+  
+  const notificationOptions = {
     body: notificationData.body,
     icon: notificationData.icon,
-    tag: notificationData.tag,
     data: notificationData.data
   };
 
-  // Add badge and actions only if supported (Chrome-specific features)
-  const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
-  if (!isFirefox) {
-    firefoxOptions.badge = notificationData.badge;
-    firefoxOptions.actions = notificationData.actions;
-    firefoxOptions.requireInteraction = notificationData.requireInteraction;
+  if (isFirefox) {
+    // Firefox keeps tag for replacement behavior
+    notificationOptions.tag = notificationData.tag;
+  } else if (isChrome) {
+    // Chrome: Use unique tags with renotify to show multiple notifications
+    notificationOptions.tag = `chrome-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    notificationOptions.badge = notificationData.badge;
+    notificationOptions.actions = notificationData.actions;
+    notificationOptions.requireInteraction = notificationData.requireInteraction;
+    notificationOptions.silent = false;
+    notificationOptions.renotify = true;
+    notificationOptions.timestamp = Date.now();
+  } else {
+    // Other browsers
+    notificationOptions.tag = notificationData.tag;
+    notificationOptions.badge = notificationData.badge;
+    notificationOptions.actions = notificationData.actions;
   }
 
-  const promiseChain = self.registration.showNotification(
-    notificationData.title,
-    firefoxOptions
-  );
+  // Debug Chrome notification behavior
+  const promiseChain = self.registration.getNotifications().then(notifications => {
+    console.log('Current notifications before show:', notifications.length);
+    console.log('Notification data:', notificationData);
+    console.log('Notification options:', notificationOptions);
+    console.log('User agent:', navigator.userAgent);
+    
+    // Don't close old notifications - let Chrome show multiple
+    return self.registration.showNotification(
+      notificationData.title,
+      notificationOptions
+    );
+  }).then(() => {
+    console.log('Notification shown successfully');
+    return self.registration.getNotifications();
+  }).then(notifications => {
+    console.log('Current notifications after show:', notifications.length);
+    notifications.forEach((n, i) => {
+      console.log(`Notification ${i}:`, n.title, n.tag);
+    });
+  }).catch(error => {
+    console.error('Error showing notification:', error);
+  });
 
   event.waitUntil(promiseChain);
 });
