@@ -235,8 +235,21 @@ class NotificationService {
   }
 
   // Utility: Convert ArrayBuffer to base64
-  private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
+  private arrayBufferToBase64(buffer: ArrayBuffer | ArrayBufferLike | null): string {
+    if (!buffer) return '';
+    
+    // Handle both ArrayBuffer and SharedArrayBuffer cases for CI compatibility
+    let arrayBuffer: ArrayBuffer;
+    if (buffer instanceof ArrayBuffer) {
+      arrayBuffer = buffer;
+    } else if ('slice' in buffer && typeof buffer.slice === 'function') {
+      // For SharedArrayBuffer or other ArrayBufferLike types
+      arrayBuffer = buffer.slice(0) as ArrayBuffer;
+    } else {
+      return '';
+    }
+    
+    const bytes = new Uint8Array(arrayBuffer);
     let binary = '';
     for (let i = 0; i < bytes.byteLength; i++) {
       binary += String.fromCharCode(bytes[i]);
