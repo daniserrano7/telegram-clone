@@ -23,7 +23,7 @@ export const App = ({ children }: Props) => {
   }
 
   return (
-    <div className="w-full h-screen text-font-primary bg-background-primary">
+    <div className="w-full h-dvh text-font-primary bg-background-primary">
       {children}
     </div>
   );

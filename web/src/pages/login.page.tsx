@@ -38,7 +38,7 @@ export const LoginPage = () => {
   return (
     <main className="w-full h-full bg-background-primary relative overflow-hidden">
       {/* Content */}
-      <div className="relative w-full h-full flex flex-col items-center justify-center px-4">
+      <div className="relative w-full h-full flex flex-col items-center overflow-y-auto py-8">
         <div className="w-full max-w-md px-4">
           {/* Logo/Brand */}
           <div className="text-center mb-6 relative">
