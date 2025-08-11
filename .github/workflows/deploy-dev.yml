@@ -97,6 +97,9 @@ jobs:
             PORT="${{ secrets.PORT }}"
             ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}"
             JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            VITE_VAPID_PUBLIC_KEY="${{ secrets.VITE_VAPID_PUBLIC_KEY }}"
+            VAPID_PRIVATE_KEY="${{ secrets.VAPID_PRIVATE_KEY }}"
+            VAPID_SUBJECT="${{ secrets.VAPID_SUBJECT }}"
             EOF
 
             # Run database deployment (generate + migrate)
@@ -132,6 +135,7 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
           VITE_PORT: ${{ secrets.VITE_PORT }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
 
       - name: Deploy web app to VPS (DEV)
         uses: appleboy/scp-action@v0.1.7
