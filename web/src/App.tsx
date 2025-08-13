@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
 import { useAppStore } from './stores/app.store';
+import { useFontSizeStore } from './stores/font-size.store';
 
 export const App = ({ children }: Props) => {
   const { init, status, cleanUp } = useAppStore();
+  // Initialize font size store (this triggers CSS variable setup)
+  useFontSizeStore();
 
   useEffect(() => {
     init();
