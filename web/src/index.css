@@ -230,29 +230,55 @@ body {
   html {
     height: -webkit-fill-available;
   }
-  
+
   #root {
     min-height: 100vh;
     min-height: -webkit-fill-available;
     min-height: 100dvh;
   }
-  
+
   body {
     min-height: 100vh;
-    min-height: -webkit-fill-available; 
+    min-height: -webkit-fill-available;
     min-height: 100dvh;
     /* Prevent bounce scrolling on iOS */
     position: fixed;
     width: 100%;
     overflow-x: hidden;
   }
-  
+
   /* Ensure app container takes full height */
   .w-full.h-dvh {
     height: 100vh;
     height: -webkit-fill-available;
     height: 100dvh;
   }
+}
+
+/* 
+  Emoji sizing configuration
+  To change emoji size, modify the --emoji-size custom property below
+  
+  Options:
+  - 1rem (16px) - Default size
+  - 1.25rem (20px) - Slightly larger
+  - 1.5rem (24px) - Large
+  - 1.75rem (28px) - Extra large
+  - 2rem (32px) - Very large
+*/
+:root {
+  --emoji-size: 1.5rem; /* CHANGE THIS VALUE to adjust emoji size */
+}
+
+/* Apply larger size to emojis in message input and content */
+.message-input-textarea {
+  font-size: 1.25rem;
+  line-height: normal;
+}
+
+.message-content {
+  font-size: var(--emoji-size);
+  line-height: 1.4;
 }
 
 /* Message animations */

@@ -1,4 +1,12 @@
-import { useEffect, useRef, useCallback, useState, Fragment } from 'react';
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  useState,
+  Fragment,
+  lazy,
+  Suspense,
+} from 'react';
 import { parseMarkdown, parseMarkdownWithHighlights } from '../utils/markdown';
 import {
   HiOutlineMagnifyingGlass,
@@ -8,7 +16,11 @@ import {
   HiOutlineChevronDown,
 } from 'react-icons/hi2';
 import cx from 'classix';
-import { IoSendSharp } from 'react-icons/io5';
+import { IoSendSharp, IoHappyOutline } from 'react-icons/io5';
+import type { EmojiClickData } from 'emoji-picker-react';
+
+// Dynamically import EmojiPicker to avoid SSR issues and hook conflicts
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
 import { BiCheck, BiCheckDouble } from 'react-icons/bi';
 import { useContactsStore } from 'src/stores/contacts.store';
 import { useAuthStore } from 'src/stores/auth.store';
@@ -538,7 +550,6 @@ const Message = ({
     };
   }, [handleMessageVisible]);
 
-
   const renderMessageContent = (
     text: string,
     query?: string
@@ -553,7 +564,6 @@ const Message = ({
       </Fragment>
     ));
   };
-
 
   return (
     <div
@@ -602,7 +612,7 @@ const Message = ({
           isCurrentMatch && 'ring-2 ring-primary'
         )}
       >
-        <div className="text-font">
+        <div className="text-font message-content">
           {renderMessageContent(
             message.content,
             highlight ? searchQuery : undefined
@@ -656,7 +666,30 @@ const MessageInput = () => {
   const sendMessage = useChatStore((state) => state.sendMessage);
   const createChat = useChatStore((state) => state.createChat);
   const emitTypingStatus = useContactsStore((state) => state.emitTypingStatus);
+  const theme = useThemeStore((state) => state.theme);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [pickerDimensions, setPickerDimensions] = useState({
+    width: 350,
+    height: 400,
+  });
+
+  // Set picker dimensions based on screen size
+  useEffect(() => {
+    const updateDimensions = () => {
+      const isMobile = window.innerWidth < 768;
+      setPickerDimensions({
+        width: isMobile ? 280 : 350,
+        height: isMobile ? 350 : 400,
+      });
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -679,6 +712,26 @@ const MessageInput = () => {
   useEffect(() => {
     adjustTextareaHeight();
   }, [adjustTextareaHeight]);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showEmojiPicker &&
+        emojiPickerRef.current &&
+        emojiButtonRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node) &&
+        !emojiButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
 
   if (!activeChat) return null;
 
@@ -734,22 +787,100 @@ const MessageInput = () => {
     emitTypingStatus(chatId, isTyping);
   };
 
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end);
+
+    textarea.value = before + emojiData.emoji + after;
+
+    // Move cursor after emoji
+    const newPosition = start + emojiData.emoji.length;
+    textarea.setSelectionRange(newPosition, newPosition);
+
+    // Focus back to textarea
+    textarea.focus();
+
+    // Adjust height and trigger input event
+    adjustTextareaHeight();
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Keep emoji picker open for multiple selections
+    // setShowEmojiPicker(false); // Commented out to keep picker open
+  };
+
   return (
-    <div className="p-4 bg-background-primary border-t border-border">
-      <form className="flex items-end space-x-4" onSubmit={handleSubmit}>
-        <textarea
-          ref={textareaRef}
-          placeholder="Write a message..."
-          autoFocus
-          rows={1}
-          className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-3 px-4 rounded-lg focus:outline focus:outline-2 focus:ring-primary-light resize-none overflow-y-auto min-h-[44px] max-h-[200px]"
-          style={{ scrollbarWidth: 'thin' }}
-          onInput={handleInput}
-          onKeyDown={handleKeyDown}
-        />
+    <div className="relative p-4 bg-background-primary border-t border-border">
+      {/* Emoji Picker */}
+      {showEmojiPicker && (
+        <div
+          ref={emojiPickerRef}
+          className="absolute bottom-full mb-2 z-50 md:right-4 right-0"
+        >
+          <Suspense
+            fallback={
+              <div className="w-[280px] md:w-[350px] h-[350px] md:h-[400px] bg-input-background rounded-lg flex items-center justify-center text-font">
+                Loading...
+              </div>
+            }
+          >
+            <EmojiPicker
+              onEmojiClick={handleEmojiClick}
+              theme={theme === 'dark' ? 'dark' : ('light' as any)}
+              lazyLoadEmojis={true}
+              searchDisabled={false}
+              skinTonesDisabled={true}
+              previewConfig={{
+                showPreview: false,
+              }}
+              width={pickerDimensions.width}
+              height={pickerDimensions.height}
+            />
+          </Suspense>
+        </div>
+      )}
+
+      <form className="flex items-center space-x-2" onSubmit={handleSubmit}>
+        <div className="flex space-x-2 items-center flex-1">
+          <textarea
+            ref={textareaRef}
+            placeholder="Write a message..."
+            autoFocus
+            rows={1}
+            className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-2 px-3 rounded-lg focus:outline focus:outline-2 focus:ring-primary-light resize-none overflow-y-auto min-h-[44px] max-h-[200px] message-input-textarea"
+            style={{ scrollbarWidth: 'thin' }}
+            onInput={handleInput}
+            onKeyDown={handleKeyDown}
+          />
+          <button
+            ref={emojiButtonRef}
+            type="button"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className={cx(
+              'rounded-full flex items-center justify-center transition-all duration-200 w-[44px] h-[44px] group',
+              showEmojiPicker
+                ? 'bg-primary text-font-primary-contrast shadow-lg shadow-primary/20'
+                : 'text-font-subtle hover:text-primary hover:bg-primary/10'
+            )}
+            aria-label="Insert emoji"
+          >
+            <IoHappyOutline
+              className={cx(
+                'w-7 h-7 transition-transform duration-200',
+                'group-hover:rotate-12',
+                showEmojiPicker && 'rotate-12'
+              )}
+            />
+          </button>
+        </div>
         <button
           type="submit"
-          className="p-3 bg-primary hover:bg-primary/80 rounded-full transition-colors flex-shrink-0"
+          className="p-3 h-[44px] w-[44px] bg-primary hover:bg-primary/80 rounded-full transition-colors flex-shrink-0"
         >
           <IoSendSharp className="w-5 h-5 text-font-primary-contrast" />
         </button>
