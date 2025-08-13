@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import cx from 'classix';
 import { useAuthStore } from '../stores/auth.store';
 import { useChatStore } from '../stores/chat.store';
@@ -10,6 +10,7 @@ import { NotificationPermissionRequest } from '../components/notification-permis
 
 export const ChatsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { chatId } = useParams<{ chatId?: string }>();
   const user = useAuthStore((state) => state.user);
   const getActiveChatFromUrl = useChatStore(
@@ -21,7 +22,11 @@ export const ChatsPage = () => {
 
   const [isChatInfo, setIsChatInfo] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
-  const [showChat, setShowChat] = useState(false);
+  
+  // Determine if we should show chat based on URL (mobile-friendly)
+  // On mobile: show chat only if we have a chatId in URL
+  // On desktop: show chat if we have chatId OR activeChat  
+  const showChat = isMobileView ? Boolean(chatId) : Boolean(chatId) || Boolean(activeChat);
 
   // Sync active chat with URL params
   useEffect(() => {
@@ -38,24 +43,26 @@ export const ChatsPage = () => {
       if (!activeChat || activeChat.id !== chatFromUrl.id) {
         setActiveChat(chatFromUrl);
       }
-      setShowChat(true);
     } else if (!chatId && activeChat && activeChat.id) {
-      // No chat ID in URL but we have active chat with ID - clear it
-      // Don't clear new chats (activeChat without ID)
-      setActiveChat(null);
-      setShowChat(false);
-    } else if (!chatId && activeChat && !activeChat.id) {
-      // New chat without ID - show it
-      setShowChat(true);
+      // No chat ID in URL but we have active chat with ID
+      // On mobile, clear it to show chat list. On desktop, keep it.
+      if (isMobileView) {
+        setActiveChat(null);
+      }
     }
-  }, [chatId, getActiveChatFromUrl, fetchChat, setActiveChat, activeChat]);
+  }, [chatId, getActiveChatFromUrl, fetchChat, setActiveChat, activeChat, isMobileView]);
 
   // Navigate when active chat gets an ID (new chat created)
+  // But only if we're not navigating back from a chat (check location state)
   useEffect(() => {
-    if (activeChat?.id && !chatId) {
+    // Don't auto-navigate if we just navigated back to chat list
+    const isNavigatingBack = location.state?.fromChatBack === true;
+    
+    if (activeChat?.id && !chatId && activeChat.id > 0 && !isNavigatingBack) {
+      // Only auto-navigate if we're on the base /chats route with a newly created chat
       navigate(`/chats/${activeChat.id}`, { replace: true });
     }
-  }, [activeChat?.id, chatId, navigate]);
+  }, [activeChat?.id, chatId, navigate, location.state]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -84,7 +91,8 @@ export const ChatsPage = () => {
             if (chatId) {
               navigate(`/chats/${chatId}`);
             } else {
-              setShowChat(true);
+              // For new chats, navigate to base chats route
+              navigate('/chats');
             }
           }}
         />
@@ -97,7 +105,13 @@ export const ChatsPage = () => {
       >
         <Chat
           toggleChatInfo={() => setIsChatInfo((prev) => !prev)}
-          onBackClick={() => setShowChat(false)}
+          onBackClick={() => {
+            // Navigate to chat list with state indicating we're going back
+            navigate('/chats', { 
+              state: { fromChatBack: true },
+              replace: true
+            });
+          }}
           showBackButton={isMobileView}
         />
       </div>

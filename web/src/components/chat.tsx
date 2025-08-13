@@ -693,7 +693,11 @@ const MessageInput = () => {
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.focus();
+      // Only auto-focus on desktop to avoid mobile keyboard popup
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile) {
+        textareaRef.current.focus();
+      }
     }
   }, [activeChat?.id]);
 
@@ -850,7 +854,6 @@ const MessageInput = () => {
           <textarea
             ref={textareaRef}
             placeholder="Write a message..."
-            autoFocus
             rows={1}
             className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-2 px-3 rounded-lg focus:outline focus:outline-2 focus:ring-primary-light resize-none overflow-y-auto min-h-[44px] max-h-[200px] message-input-textarea"
             style={{ scrollbarWidth: 'thin' }}
