@@ -172,8 +172,9 @@ jobs:
           pnpm test
         env:
           CI: true
-          API_URL: http://localhost:5000
-          WEB_URL: http://localhost:5173
+          E2E_BASE_URL: http://localhost:5173
+          E2E_API_URL: http://localhost:5000
+          E2E_WS_URL: ws://localhost:5000
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
