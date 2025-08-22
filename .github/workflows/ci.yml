@@ -141,7 +141,9 @@ jobs:
       - name: Start server in background
         run: |
           cd server
-          npm run start &
+          # Build first, then run the built version
+          pnpm run build
+          node dist/src/main &
           echo $! > server.pid
           # Wait for server to be ready
           timeout 60 bash -c 'until curl -f http://localhost:5000/api/health; do sleep 2; done'
