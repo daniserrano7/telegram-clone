@@ -2,6 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { Logger, LogLevel } from '@nestjs/common';
 import { AppModule } from './app.module';
 
+// Polyfill crypto.randomUUID for CI environments
+if (process.env.NODE_ENV === 'test' && typeof globalThis.crypto === 'undefined') {
+  globalThis.crypto = {
+    randomUUID: () => require('crypto').randomBytes(16).toString('hex')
+  } as any;
+}
+
 async function bootstrap() {
   // Configure log levels based on environment
   const logLevels: LogLevel[] = process.env.NODE_ENV === 'production' 
