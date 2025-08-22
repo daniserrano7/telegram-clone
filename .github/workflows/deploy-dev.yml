@@ -8,6 +8,10 @@ on:
       - 'web/**'
       - 'shared/**'
       - '.github/workflows/deploy-dev.yml'
+  workflow_run:
+    workflows: ["CI Checks"]
+    branches: [develop]
+    types: [completed]
   workflow_dispatch:
     inputs:
       force_deploy_server:
@@ -22,8 +26,26 @@ on:
         type: boolean
 
 jobs:
+  check-ci-success:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Check CI workflow success
+        run: |
+          if [[ "${{ github.event.workflow_run.conclusion }}" == "success" ]]; then
+            echo "✅ CI checks passed, proceeding with deployment"
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "⚠️  Direct push detected - deployment will proceed without CI validation"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "🚀 Manual deployment triggered - skipping CI validation"
+          else
+            echo "❌ CI checks failed, deployment cancelled"
+            exit 1
+          fi
+
   detect-changes:
     runs-on: ubuntu-latest
+    needs: check-ci-success
     outputs:
       server-changed: ${{ steps.changes.outputs.server || inputs.force_deploy_server }}
       web-changed: ${{ steps.changes.outputs.web || inputs.force_deploy_web }}
