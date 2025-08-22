@@ -1,0 +1,228 @@
+name: CI Checks
+
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+    branches: [develop, master]
+
+jobs:
+  # Environment validation job
+  validate-env:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Validate CI environment variables
+        run: |
+          cd web
+          node -e "
+          const { z } = require('zod');
+          
+          const ciEnvSchema = z.object({
+            NODE_ENV: z.enum(['test', 'development', 'production']).default('test'),
+            DATABASE_URL: z.string().url().optional(),
+            JWT_SECRET: z.string().min(32).optional(),
+            VITE_API_URL: z.string().url().optional(),
+            VITE_WS_URL: z.string().url().optional(),
+            VITE_PORT: z.string().optional(),
+          });
+          
+          const env = {
+            NODE_ENV: process.env.NODE_ENV || 'test',
+            DATABASE_URL: process.env.DATABASE_URL,
+            JWT_SECRET: process.env.JWT_SECRET,
+            VITE_API_URL: process.env.VITE_API_URL,
+            VITE_WS_URL: process.env.VITE_WS_URL,
+            VITE_PORT: process.env.VITE_PORT,
+          };
+          
+          try {
+            ciEnvSchema.parse(env);
+            console.log('✅ CI environment variables validation passed');
+          } catch (error) {
+            console.error('❌ CI environment variables validation failed:', error.errors);
+            process.exit(1);
+          }
+          "
+
+  # TypeScript type checking
+  typecheck:
+    runs-on: ubuntu-latest
+    needs: validate-env
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Generate Prisma client
+        run: cd server && pnpm prisma generate
+
+      - name: TypeScript check - Server
+        run: pnpm run typecheck:server
+
+      - name: TypeScript check - Web
+        run: pnpm run typecheck:web
+
+  # End-to-end tests
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [validate-env, typecheck]
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: cd e2e && pnpm install-browsers
+
+      - name: Setup test database
+        run: |
+          cd server
+          # Create test environment file
+          cat > .env.test << EOF
+          NODE_ENV=test
+          DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_db
+          JWT_SECRET=test_jwt_secret_that_is_long_enough_for_validation_purposes
+          PORT=3001
+          ALLOWED_ORIGINS=http://localhost:5173
+          EOF
+          
+          # Generate Prisma client and run migrations
+          pnpm prisma generate
+          pnpm prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+
+      - name: Start server in background
+        run: |
+          cd server
+          pnpm run start:dev:test &
+          echo $! > server.pid
+          # Wait for server to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:3001/health; do sleep 2; done'
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+
+      - name: Start web app in background
+        run: |
+          cd web
+          # Create test environment file
+          cat > .env.test << EOF
+          VITE_API_URL=http://localhost:3001
+          VITE_WS_URL=ws://localhost:3001
+          VITE_PORT=5173
+          EOF
+          
+          pnpm run dev &
+          echo $! > web.pid
+          # Wait for web app to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:5173; do sleep 2; done'
+
+      - name: Run E2E tests
+        run: |
+          cd e2e
+          # Create test environment file
+          cat > .env << EOF
+          API_URL=http://localhost:3001
+          WEB_URL=http://localhost:5173
+          EOF
+          
+          pnpm test
+        env:
+          CI: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-results
+          path: e2e/test-results/
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Kill background processes
+          if [ -f server/server.pid ]; then
+            kill $(cat server/server.pid) || true
+          fi
+          if [ -f web/web.pid ]; then
+            kill $(cat web/web.pid) || true
+          fi
+          # Cleanup any remaining processes
+          pkill -f "nest start" || true
+          pkill -f "vite" || true
+
+  # Summary job that depends on all checks
+  ci-success:
+    runs-on: ubuntu-latest
+    needs: [validate-env, typecheck, e2e-tests]
+    if: always()
+    steps:
+      - name: Check CI status
+        run: |
+          if [[ "${{ needs.validate-env.result }}" == "success" && 
+                "${{ needs.typecheck.result }}" == "success" && 
+                "${{ needs.e2e-tests.result }}" == "success" ]]; then
+            echo "✅ All CI checks passed successfully!"
+          else
+            echo "❌ Some CI checks failed:"
+            echo "  - Environment validation: ${{ needs.validate-env.result }}"
+            echo "  - TypeScript checks: ${{ needs.typecheck.result }}"
+            echo "  - E2E tests: ${{ needs.e2e-tests.result }}"
+            exit 1
+          fi
