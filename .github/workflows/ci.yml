@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -32,7 +32,7 @@ jobs:
           cd web
           node -e "
           const { z } = require('zod');
-          
+
           const ciEnvSchema = z.object({
             NODE_ENV: z.enum(['test', 'development', 'production']).default('test'),
             DATABASE_URL: z.string().url().optional(),
@@ -41,7 +41,7 @@ jobs:
             VITE_WS_URL: z.string().url().optional(),
             VITE_PORT: z.string().optional(),
           });
-          
+
           const env = {
             NODE_ENV: process.env.NODE_ENV || 'test',
             DATABASE_URL: process.env.DATABASE_URL,
@@ -50,7 +50,7 @@ jobs:
             VITE_WS_URL: process.env.VITE_WS_URL,
             VITE_PORT: process.env.VITE_PORT,
           };
-          
+
           try {
             ciEnvSchema.parse(env);
             console.log('✅ CI environment variables validation passed');
@@ -66,7 +66,7 @@ jobs:
     needs: validate-env
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -111,7 +111,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -141,7 +141,7 @@ jobs:
       - name: Start server in background
         run: |
           cd server
-          nest start --host 0.0.0.0 &
+          npm run start &
           echo $! > server.pid
           # Wait for server to be ready
           timeout 60 bash -c 'until curl -f http://localhost:5000/api/health; do sleep 2; done'
