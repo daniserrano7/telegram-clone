@@ -162,7 +162,7 @@ jobs:
           # Wait for web app to be ready
           timeout 60 bash -c 'until curl -f http://localhost:5173; do sleep 2; done'
         env:
-          VITE_API_URL: http://localhost:5000
+          VITE_API_URL: http://localhost:5000/api
           VITE_WS_URL: ws://localhost:5000
           VITE_PORT: 5173
 
@@ -173,7 +173,7 @@ jobs:
         env:
           CI: true
           E2E_BASE_URL: http://localhost:5173
-          E2E_API_URL: http://localhost:5000
+          E2E_API_URL: http://localhost:5000/api
           E2E_WS_URL: ws://localhost:5000
 
       - name: Upload test results
