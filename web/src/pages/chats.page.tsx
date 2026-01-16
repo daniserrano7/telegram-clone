@@ -22,10 +22,10 @@ export const ChatsPage = () => {
 
   const [isChatInfo, setIsChatInfo] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
-  
+
   // Determine if we should show chat based on URL (mobile-friendly)
   // On mobile: show chat only if we have a chatId in URL
-  // On desktop: show chat if we have chatId OR activeChat  
+  // On desktop: show chat if we have chatId OR activeChat
   const showChat = isMobileView ? Boolean(chatId) : Boolean(chatId) || Boolean(activeChat);
 
   // Sync active chat with URL params

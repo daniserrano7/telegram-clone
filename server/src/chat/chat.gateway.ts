@@ -19,6 +19,7 @@ import { Events } from '@shared/gateway.dto';
 import { UserStatusService } from '../user/user-status.service';
 import { NotificationService } from '../notification/notification.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { BlockedUserException } from 'src/user/blocked-user.exception';
 
 // Get allowed origins from environment variable or use defaults
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
@@ -228,7 +229,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       try {
         const chat = await this.chatService.getChat(chatId);
         const recipientIds = chat.members.map(member => member.id);
-        
+
         // Send push notifications to offline/background users
         await this.notificationService.sendNewMessageNotification(
           userId,
@@ -242,6 +243,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       return { status: 'success', message };
     } catch (error) {
+      // Handle blocked user - return fake success so sender doesn't know they're blocked
+      if (error instanceof BlockedUserException) {
+        return {
+          status: 'success',
+          message: {
+            id: -1, // Fake ID
+            content,
+            status: 'SENT',
+            chatId,
+            senderId: userId,
+            createdAt: new Date(),
+          },
+        };
+      }
+
       return {
         status: 'error',
         message: `Failed to add message: ${error.message}`,

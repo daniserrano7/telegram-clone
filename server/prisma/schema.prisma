@@ -16,6 +16,8 @@ model User {
   messages          Message[]            @relation("SentMessages")
   chats             Chat[]               @relation("UserChats")
   pushSubscriptions PushSubscription[]
+  blockedUsers      BlockedUser[]        @relation("BlockedByUser")
+  blockedByUsers    BlockedUser[]        @relation("BlockedUsers")
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   deletedAt         DateTime?
@@ -55,6 +57,20 @@ enum MessageStatus {
   SENT
   DELIVERED
   READ
+}
+
+model BlockedUser {
+  id        Int      @id @default(autoincrement())
+  blocker   User     @relation("BlockedByUser", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockerId Int      @map("blocker_id")
+  blocked   User     @relation("BlockedUsers", fields: [blockedId], references: [id], onDelete: Cascade)
+  blockedId Int      @map("blocked_id")
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("blocked_users")
 }
 
 model PushSubscription {

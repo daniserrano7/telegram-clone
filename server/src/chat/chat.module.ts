@@ -7,6 +7,7 @@ import { UploadService } from '../upload/upload.service';
 import { UserStatusService } from '../user/user-status.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationService } from 'src/notification/notification.service';
+import { BlockService } from 'src/user/block.service';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
@@ -18,6 +19,7 @@ import { NotificationService } from 'src/notification/notification.service';
     UploadService,
     UserStatusService,
     NotificationService,
+    BlockService,
   ],
   exports: [ChatService],
 })

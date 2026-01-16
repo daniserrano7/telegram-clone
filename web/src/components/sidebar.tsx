@@ -413,7 +413,7 @@ const ChatList = ({
               setActiveChat(chat);
               onChatSelect?.(chat.id);
             }}
-            className={`p-4 flex items-center space-x-3 cursor-pointer ${
+            className={`p-4 flex items-center space-x-3 cursor-pointer relative ${
               activeChat?.id === chat.id
                 ? 'bg-primary text-font-primary-contrast'
                 : 'text-font hover:bg-elevation-hover'

@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { DbService } from 'src/db/db.service';
 import { MessageStatus } from '@shared/gateway.dto';
+import { BlockService } from 'src/user/block.service';
+import { BlockedUserException } from 'src/user/blocked-user.exception';
+
 @Injectable()
 export class ChatService {
-  constructor(private readonly db: DbService) {}
+  constructor(
+    private readonly db: DbService,
+    private readonly blockService: BlockService,
+  ) {}
 
   async createChat(memberIds: number[]) {
     const foundChats = await this.db.chat.findMany({
@@ -122,6 +128,22 @@ export class ChatService {
   }
 
   async addMessage(chatId: number, userId: number, content: string) {
+    // Get chat to find recipient
+    const chat = await this.getChat(chatId);
+    const recipient = chat.members.find((m) => m.id !== userId);
+
+    // Check if either user has blocked the other
+    if (recipient) {
+      const isEitherBlocked = await this.blockService.isEitherBlocked(
+        userId,
+        recipient.id,
+      );
+
+      if (isEitherBlocked) {
+        throw new BlockedUserException();
+      }
+    }
+
     const message = await this.db.message.create({
       data: {
         content,

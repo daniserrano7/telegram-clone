@@ -26,6 +26,7 @@ import { useContactsStore } from 'src/stores/contacts.store';
 import { useAuthStore } from 'src/stores/auth.store';
 import { useChatStore } from 'src/stores/chat.store';
 import { useThemeStore } from 'src/stores/theme.store';
+import { useBlockStore } from 'src/stores/block.store';
 import { type MessageStatus } from '@shared/gateway.dto';
 import { Events } from '@shared/gateway.dto';
 import { type Message } from '@shared/chat.dto';
@@ -229,6 +230,7 @@ const ChatHeader = ({
   const isTyping = typingStatus
     ? typingStatus.isTyping && typingStatus.chatId === activeChat?.id
     : false;
+  const isBlocked = useBlockStore((state) => state.isBlocked(partner?.id || 0));
 
   const {
     searchQuery,
@@ -249,6 +251,7 @@ const ChatHeader = ({
   if (!activeChat || !partner) return null;
 
   const getStatusText = () => {
+    if (isBlocked) return 'Blocked';
     if (isTyping) return 'Typing...';
     if (isOnline) return 'Online';
     if (lastConnection) {
@@ -328,7 +331,12 @@ const ChatHeader = ({
                 </div>
                 <div className="text-start">
                   <h2 className="text-font font-medium">{partner.username}</h2>
-                  <span className="text-sm text-font-subtle">
+                  <span
+                    className={cx(
+                      'text-sm',
+                      isBlocked ? 'text-red-500' : 'text-font-subtle'
+                    )}
+                  >
                     {getStatusText()}
                   </span>
                 </div>
@@ -663,10 +671,12 @@ const MessageStatus = ({ status }: { status: MessageStatus }) => {
 
 const MessageInput = () => {
   const activeChat = useChatStore((state) => state.activeChat);
+  const getChatPartner = useChatStore((state) => state.getChatPartner);
   const sendMessage = useChatStore((state) => state.sendMessage);
   const createChat = useChatStore((state) => state.createChat);
   const emitTypingStatus = useContactsStore((state) => state.emitTypingStatus);
   const theme = useThemeStore((state) => state.theme);
+  const isEitherBlocked = useBlockStore((state) => state.isEitherBlocked);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
@@ -675,6 +685,9 @@ const MessageInput = () => {
     width: 350,
     height: 400,
   });
+
+  const partner = activeChat ? getChatPartner(activeChat) : null;
+  const blocked = partner ? isEitherBlocked(partner.id) : false;
 
   // Set picker dimensions based on screen size
   useEffect(() => {
@@ -738,6 +751,16 @@ const MessageInput = () => {
   }, [showEmojiPicker]);
 
   if (!activeChat) return null;
+
+  if (blocked) {
+    return (
+      <div className="p-4 bg-background-primary border-t border-border text-center">
+        <p className="text-font-subtle text-sm">
+          You cannot send messages to this user
+        </p>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

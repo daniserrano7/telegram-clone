@@ -9,7 +9,7 @@ on:
       - 'shared/**'
       - '.github/workflows/deploy-dev.yml'
   workflow_run:
-    workflows: ["CI Checks"]
+    workflows: ['CI Checks']
     branches: [develop]
     types: [completed]
   workflow_dispatch:
@@ -119,7 +119,7 @@ jobs:
             PORT="${{ secrets.PORT }}"
             ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}"
             JWT_SECRET="${{ secrets.JWT_SECRET }}"
-            VITE_VAPID_PUBLIC_KEY="${{ secrets.VITE_VAPID_PUBLIC_KEY }}"
+            VAPID_PUBLIC_KEY="${{ secrets.VAPID_PUBLIC_KEY }}"
             VAPID_PRIVATE_KEY="${{ secrets.VAPID_PRIVATE_KEY }}"
             VAPID_SUBJECT="${{ secrets.VAPID_SUBJECT }}"
             EOF
