@@ -7,6 +7,7 @@ import { ChatModule } from './chat/chat.module';
 import { UserModule } from './user/user.module';
 import { UploadModule } from './upload/upload.module';
 import { HealthModule } from './health/health.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -15,9 +16,10 @@ import { HealthModule } from './health/health.module';
     ChatModule,
     UserModule,
     HealthModule,
+    NotificationModule,
     ConfigModule.forRoot({
       envFilePath:
-        process.env.NODE_ENV === 'production' ? '.env.production' : '.env.dev',
+        process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),

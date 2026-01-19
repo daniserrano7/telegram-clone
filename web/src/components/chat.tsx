@@ -1,4 +1,13 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  useState,
+  Fragment,
+  lazy,
+  Suspense,
+} from 'react';
+import { parseMarkdown, parseMarkdownWithHighlights } from '../utils/markdown';
 import {
   HiOutlineMagnifyingGlass,
   HiOutlineViewColumns,
@@ -7,15 +16,19 @@ import {
   HiOutlineChevronDown,
 } from 'react-icons/hi2';
 import cx from 'classix';
-import { IoSendSharp } from 'react-icons/io5';
-import { BiCheck, BiCheckDouble } from 'react-icons/bi';
+import { IoSendSharp, IoHappyOutline } from 'react-icons/io5';
+import type { EmojiClickData } from 'emoji-picker-react';
+
+// Dynamically import EmojiPicker to avoid SSR issues and hook conflicts
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
+import { BiCheck, BiCheckDouble, BiTime, BiError, BiX } from 'react-icons/bi';
 import { useContactsStore } from 'src/stores/contacts.store';
 import { useAuthStore } from 'src/stores/auth.store';
 import { useChatStore } from 'src/stores/chat.store';
 import { useThemeStore } from 'src/stores/theme.store';
-import { type MessageStatus } from '@shared/gateway.dto';
+import { useBlockStore } from 'src/stores/block.store';
 import { Events } from '@shared/gateway.dto';
-import { type Message } from '@shared/chat.dto';
+import { type LocalMessage, type LocalMessageStatus } from '../types/local-message';
 import { ProfileDialog } from './profile-dialog';
 import { Avatar } from './avatar';
 import { useSearchStore } from 'src/stores/search.store';
@@ -205,6 +218,7 @@ const ChatHeader = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const activeChat = useChatStore((state) => state.activeChat);
   const getChatPartner = useChatStore((state) => state.getChatPartner);
+  const isNetworkOnline = useChatStore((state) => state.isOnline);
   const partner = activeChat ? getChatPartner(activeChat) : null;
   const contacts = useContactsStore((state) => state.contacts);
   const isOnline = partner
@@ -216,6 +230,7 @@ const ChatHeader = ({
   const isTyping = typingStatus
     ? typingStatus.isTyping && typingStatus.chatId === activeChat?.id
     : false;
+  const isBlocked = useBlockStore((state) => state.isBlocked(partner?.id || 0));
 
   const {
     searchQuery,
@@ -236,6 +251,7 @@ const ChatHeader = ({
   if (!activeChat || !partner) return null;
 
   const getStatusText = () => {
+    if (isBlocked) return 'Blocked';
     if (isTyping) return 'Typing...';
     if (isOnline) return 'Online';
     if (lastConnection) {
@@ -246,6 +262,13 @@ const ChatHeader = ({
 
   return (
     <>
+      {/* Offline banner */}
+      {!isNetworkOnline && (
+        <div className="bg-yellow-500/90 text-white text-sm py-1.5 px-4 flex items-center justify-center gap-2">
+          <BiError className="w-4 h-4" />
+          <span>You're offline. Messages will be sent when you reconnect.</span>
+        </div>
+      )}
       <div className="h-[64px] px-4 flex items-center justify-between bg-background-primary border-b border-border">
         {isSearching ? (
           <div className="flex-1 flex items-center gap-3">
@@ -315,7 +338,12 @@ const ChatHeader = ({
                 </div>
                 <div className="text-start">
                   <h2 className="text-font font-medium">{partner.username}</h2>
-                  <span className="text-sm text-font-subtle">
+                  <span
+                    className={cx(
+                      'text-sm',
+                      isBlocked ? 'text-red-500' : 'text-font-subtle'
+                    )}
+                  >
                     {getStatusText()}
                   </span>
                 </div>
@@ -382,13 +410,13 @@ const MessageList = () => {
 
   if (!activeChat) return null;
 
-  const getMessageSender = (message: Message) => {
+  const getMessageSender = (message: LocalMessage) => {
     return activeChat.members.find((member) => member.id === message.senderId);
   };
 
   const getMessagePosition = (
     index: number,
-    message: Message
+    message: LocalMessage
   ): 'single' | 'first' | 'middle' | 'last' => {
     const prevMessage = index > 0 ? activeChat.messages[index - 1] : null;
     const nextMessage =
@@ -479,7 +507,7 @@ const Message = ({
   user,
   position,
 }: {
-  message: Message;
+  message: LocalMessage;
   isOwn: boolean;
   highlight?: boolean;
   searchQuery?: string;
@@ -489,6 +517,8 @@ const Message = ({
 }) => {
   const messageRef = useRef<HTMLDivElement>(null);
   const wasReadRef = useRef(false);
+  const retryMessage = useChatStore((state) => state.retryMessage);
+  const cancelMessage = useChatStore((state) => state.cancelMessage);
 
   useEffect(() => {
     if (isCurrentMatch && messageRef.current) {
@@ -537,19 +567,19 @@ const Message = ({
     };
   }, [handleMessageVisible]);
 
-  const highlightText = (text: string, query: string) => {
-    if (!query) return text;
+  const renderMessageContent = (
+    text: string,
+    query?: string
+  ): React.ReactNode => {
+    // First split by lines to handle multiline
+    const lines = text.split('\n');
 
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
-    return parts.map((part, i) =>
-      part.toLowerCase() === query.toLowerCase() ? (
-        <span key={i} className="bg-yellow-200 text-black rounded px-0.5">
-          {part}
-        </span>
-      ) : (
-        part
-      )
-    );
+    return lines.map((line, lineIndex) => (
+      <Fragment key={lineIndex}>
+        {query ? parseMarkdownWithHighlights(line, query) : parseMarkdown(line)}
+        {lineIndex < lines.length - 1 && <br />}
+      </Fragment>
+    ));
   };
 
   return (
@@ -599,11 +629,12 @@ const Message = ({
           isCurrentMatch && 'ring-2 ring-primary'
         )}
       >
-        <p className="text-font">
-          {highlight && searchQuery
-            ? highlightText(message.content, searchQuery)
-            : message.content}
-        </p>
+        <div className="text-font message-content">
+          {renderMessageContent(
+            message.content,
+            highlight ? searchQuery : undefined
+          )}
+        </div>
 
         {/* Timestamp and status with Telegram styling */}
         <div className="flex items-center justify-end gap-1 mt-0.5 ml-4 float-right">
@@ -619,15 +650,66 @@ const Message = ({
               hour12: false,
             })}
           </span>
-          {isOwn && <MessageStatus status={message.status} />}
+          {isOwn && (
+            <MessageStatus
+              status={message.status}
+              onRetry={
+                message.status === 'FAILED'
+                  ? () => retryMessage(message.clientMessageId)
+                  : undefined
+              }
+              onCancel={
+                message.status === 'FAILED'
+                  ? () => cancelMessage(message.clientMessageId)
+                  : undefined
+              }
+            />
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-const MessageStatus = ({ status }: { status: MessageStatus }) => {
+const MessageStatus = ({
+  status,
+  onRetry,
+  onCancel,
+}: {
+  status: LocalMessageStatus;
+  onRetry?: () => void;
+  onCancel?: () => void;
+}) => {
   switch (status) {
+    case 'PENDING':
+      return (
+        <div className="flex items-center">
+          <BiTime className="w-4 h-4 text-font-secondary animate-pulse" />
+        </div>
+      );
+    case 'FAILED':
+      return (
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="p-0.5 rounded hover:bg-elevation-hover"
+            aria-label="Retry sending message"
+            title="Retry"
+          >
+            <BiError className="w-4 h-4 text-red-500" />
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="p-0.5 rounded hover:bg-elevation-hover"
+            aria-label="Cancel message"
+            title="Cancel"
+          >
+            <BiX className="w-4 h-4 text-font-secondary" />
+          </button>
+        </div>
+      );
     case 'SENT':
       return <BiCheck className="w-5 h-5 text-font-secondary" />;
     case 'DELIVERED':
@@ -649,34 +731,113 @@ const MessageStatus = ({ status }: { status: MessageStatus }) => {
 
 const MessageInput = () => {
   const activeChat = useChatStore((state) => state.activeChat);
+  const getChatPartner = useChatStore((state) => state.getChatPartner);
   const sendMessage = useChatStore((state) => state.sendMessage);
   const createChat = useChatStore((state) => state.createChat);
   const emitTypingStatus = useContactsStore((state) => state.emitTypingStatus);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const theme = useThemeStore((state) => state.theme);
+  const isEitherBlocked = useBlockStore((state) => state.isEitherBlocked);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [pickerDimensions, setPickerDimensions] = useState({
+    width: 350,
+    height: 400,
+  });
+
+  const partner = activeChat ? getChatPartner(activeChat) : null;
+  const blocked = partner ? isEitherBlocked(partner.id) : false;
+
+  // Set picker dimensions based on screen size
+  useEffect(() => {
+    const updateDimensions = () => {
+      const isMobile = window.innerWidth < 768;
+      setPickerDimensions({
+        width: isMobile ? 280 : 350,
+        height: isMobile ? 350 : 400,
+      });
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
 
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
+    if (textareaRef.current) {
+      // Only auto-focus on desktop to avoid mobile keyboard popup
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile) {
+        textareaRef.current.focus();
+      }
     }
   }, [activeChat?.id]);
 
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+
+    // Calculate new height (min 20px for single line, max 200px for ~8 lines)
+    const newHeight = Math.min(Math.max(textarea.scrollHeight, 44), 200);
+    textarea.style.height = `${newHeight}px`;
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [adjustTextareaHeight]);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showEmojiPicker &&
+        emojiPickerRef.current &&
+        emojiButtonRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node) &&
+        !emojiButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
   if (!activeChat) return null;
+
+  if (blocked) {
+    return (
+      <div className="p-4 bg-background-primary border-t border-border text-center">
+        <p className="text-font-subtle text-sm">
+          You cannot send messages to this user
+        </p>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const input = e.currentTarget.querySelector('input');
-    if (!input) return;
+    const textarea = e.currentTarget.querySelector('textarea');
+    if (!textarea) return;
 
-    const content = input.value;
+    const content = textarea.value.trim();
     if (!content) return;
 
     const chatId = activeChat.id;
     if (!chatId) {
-      await createChat({
+      createChat({
         userIds: activeChat.members.map((member) => member.id),
         content,
       });
-      input.value = '';
+      textarea.value = '';
+      adjustTextareaHeight();
       return;
     }
 
@@ -686,32 +847,126 @@ const MessageInput = () => {
       console.error('Failed to send message', error);
     }
 
-    input.value = '';
+    textarea.value = '';
+    adjustTextareaHeight();
     emitTypingStatus(chatId, false);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Send message on Enter (but allow Shift+Enter for new lines)
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const form = e.currentTarget.closest('form');
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+  };
+
+  const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget;
+    adjustTextareaHeight();
+
+    const chatId = activeChat.id;
+    if (!chatId) return;
+
+    const isTyping = textarea.value.trim().length > 0;
+    emitTypingStatus(chatId, isTyping);
+  };
+
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end);
+
+    textarea.value = before + emojiData.emoji + after;
+
+    // Move cursor after emoji
+    const newPosition = start + emojiData.emoji.length;
+    textarea.setSelectionRange(newPosition, newPosition);
+
+    // Focus back to textarea
+    textarea.focus();
+
+    // Adjust height and trigger input event
+    adjustTextareaHeight();
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Keep emoji picker open for multiple selections
+    // setShowEmojiPicker(false); // Commented out to keep picker open
+  };
+
   return (
-    <div className="p-4 bg-background-primary border-t border-border">
-      <form className="flex items-center space-x-4" onSubmit={handleSubmit}>
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder="Write a message..."
-          autoFocus
-          className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-3 px-4 rounded-lg focus:outline focus:outline-2 focus:ring-primary-light"
-          onChange={(e) => {
-            const chatId = activeChat.id;
-            console.log('Message input changed', chatId);
+    <div className="relative p-4 bg-background-primary border-t border-border">
+      {/* Emoji Picker */}
+      {showEmojiPicker && (
+        <div
+          ref={emojiPickerRef}
+          className="absolute bottom-full mb-2 z-50 md:right-4 right-0"
+        >
+          <Suspense
+            fallback={
+              <div className="w-[280px] md:w-[350px] h-[350px] md:h-[400px] bg-input-background rounded-lg flex items-center justify-center text-font">
+                Loading...
+              </div>
+            }
+          >
+            <EmojiPicker
+              onEmojiClick={handleEmojiClick}
+              theme={theme === 'dark' ? 'dark' : ('light' as any)}
+              lazyLoadEmojis={true}
+              searchDisabled={false}
+              skinTonesDisabled={true}
+              previewConfig={{
+                showPreview: false,
+              }}
+              width={pickerDimensions.width}
+              height={pickerDimensions.height}
+            />
+          </Suspense>
+        </div>
+      )}
 
-            if (!chatId) return;
-
-            const isTyping = e.currentTarget.value.trim().length > 0;
-            emitTypingStatus(chatId, isTyping);
-          }}
-        />
+      <form className="flex items-center space-x-2" onSubmit={handleSubmit}>
+        <div className="flex space-x-2 items-center flex-1">
+          <textarea
+            ref={textareaRef}
+            placeholder="Write a message..."
+            rows={1}
+            className="flex-1 bg-input-background hover:bg-input-background-hover text-font py-2 px-3 rounded-lg focus:outline focus:outline-2 focus:ring-primary-light resize-none overflow-y-auto min-h-[44px] max-h-[200px] message-input-textarea"
+            style={{ scrollbarWidth: 'thin' }}
+            onInput={handleInput}
+            onKeyDown={handleKeyDown}
+          />
+          <button
+            ref={emojiButtonRef}
+            type="button"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className={cx(
+              'rounded-full flex items-center justify-center transition-all duration-200 w-[44px] h-[44px] group',
+              showEmojiPicker
+                ? 'bg-primary text-font-primary-contrast shadow-lg shadow-primary/20'
+                : 'text-font-subtle hover:text-primary hover:bg-primary/10'
+            )}
+            aria-label="Insert emoji"
+          >
+            <IoHappyOutline
+              className={cx(
+                'w-7 h-7 transition-transform duration-200',
+                'group-hover:rotate-12',
+                showEmojiPicker && 'rotate-12'
+              )}
+            />
+          </button>
+        </div>
         <button
           type="submit"
-          className="p-3 bg-primary hover:bg-primary/80 rounded-full transition-colors"
+          className="p-3 h-[44px] w-[44px] bg-primary hover:bg-primary/80 rounded-full transition-colors flex-shrink-0"
         >
           <IoSendSharp className="w-5 h-5 text-font-primary-contrast" />
         </button>

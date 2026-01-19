@@ -8,18 +8,21 @@ datasource db {
 }
 
 model User {
-  id             Int              @id @default(autoincrement())
-  username       String           @unique
-  password       String
-  bio            String?
-  avatarUrl      String?
-  messages       Message[]        @relation("SentMessages")
-  chats          Chat[]           @relation("UserChats")
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  deletedAt      DateTime?
-  onlineStatus   UserOnlineStatus @default(ONLINE)
-  lastConnection DateTime         @default(now())
+  id                Int                  @id @default(autoincrement())
+  username          String               @unique
+  password          String
+  bio               String?
+  avatarUrl         String?
+  messages          Message[]            @relation("SentMessages")
+  chats             Chat[]               @relation("UserChats")
+  pushSubscriptions PushSubscription[]
+  blockedUsers      BlockedUser[]        @relation("BlockedByUser")
+  blockedByUsers    BlockedUser[]        @relation("BlockedUsers")
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  deletedAt         DateTime?
+  onlineStatus      UserOnlineStatus     @default(ONLINE)
+  lastConnection    DateTime             @default(now())
 }
 
 enum UserOnlineStatus {
@@ -54,4 +57,31 @@ enum MessageStatus {
   SENT
   DELIVERED
   READ
+}
+
+model BlockedUser {
+  id        Int      @id @default(autoincrement())
+  blocker   User     @relation("BlockedByUser", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockerId Int      @map("blocker_id")
+  blocked   User     @relation("BlockedUsers", fields: [blockedId], references: [id], onDelete: Cascade)
+  blockedId Int      @map("blocked_id")
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("blocked_users")
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  endpoint  String   @unique
+  p256dhKey String   @map("p256dh_key")
+  authKey   String   @map("auth_key")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("push_subscriptions")
 }

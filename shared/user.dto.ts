@@ -12,6 +12,8 @@ export interface User {
   updatedAt: Date;
   deletedAt: Date | null;
   avatarUrl: string | null;
+  isBlockedByMe?: boolean;
+  hasBlockedMe?: boolean;
 }
 
 export type GetUserRequestDto = {

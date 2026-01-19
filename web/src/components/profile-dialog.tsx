@@ -10,6 +10,7 @@ import { useAuthStore } from 'src/stores/auth.store';
 import { Avatar } from './avatar';
 import { apiService } from 'src/services/api.service';
 import { type User } from '@shared/user.dto';
+import { BlockUserButton } from './block-user-button';
 import 'src/styles/animations.css';
 
 export const ProfileDialog = ({
@@ -230,6 +231,12 @@ export const ProfileDialog = ({
                 </p>
               )}
             </div>
+
+            {!isOwnProfile && (
+              <div className="mt-6">
+                <BlockUserButton userId={viewUser.id} />
+              </div>
+            )}
           </div>
         </Dialog.Content>
       </Dialog.Portal>

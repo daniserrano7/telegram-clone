@@ -183,15 +183,18 @@
 
 #root {
   width: 100%;
-  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height - adjusts with mobile browser UI */
 }
 
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100vh; /* Fallback for older browsers */
+  min-height: 100dvh; /* Dynamic viewport height - adjusts with mobile browser UI */
   width: 100%;
   height: 100%;
+  /* Prevent scrolling when mobile browser UI appears/disappears */
+  overflow-x: hidden;
 }
 
 /* Custom scrollbar */
@@ -210,6 +213,71 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-elevation-active);
+}
+
+/* Mobile viewport fixes */
+@supports (height: 100dvh) {
+  #root {
+    height: 100dvh; /* Use dynamic viewport height when supported */
+  }
+  body {
+    min-height: 100dvh;
+  }
+}
+
+/* Fix for iOS Safari and mobile browsers */
+@media screen and (max-width: 768px) {
+  html {
+    height: -webkit-fill-available;
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
+    /* Prevent bounce scrolling on iOS */
+    position: fixed;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Ensure app container takes full height */
+  .w-full.h-dvh {
+    height: 100vh;
+    height: -webkit-fill-available;
+    height: 100dvh;
+  }
+}
+
+/* 
+  Font size system with emoji-to-text ratio
+  These variables are controlled by the font size store
+  
+  Font sizes:
+  - small: 14px base, 18px emoji (1.28x ratio)
+  - medium: 16px base, 22px emoji (1.375x ratio) - DEFAULT
+  - large: 18px base, 24px emoji (1.33x ratio)
+*/
+:root {
+  --font-size-base: 1rem; /* Base text size - controlled by font size store */
+  --font-size-emoji: 1.375rem; /* Emoji size - controlled by font size store */
+}
+
+/* Apply font sizes to message input and content */
+.message-input-textarea {
+  font-size: var(--font-size-base);
+  line-height: normal;
+}
+
+.message-content {
+  font-size: var(--font-size-emoji);
+  line-height: 1.4;
 }
 
 /* Message animations */

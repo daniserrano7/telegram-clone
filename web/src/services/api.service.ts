@@ -278,6 +278,75 @@ export class ApiService {
       return { status: 'error', error };
     }
   }
+
+  async blockUser(userId: number) {
+    try {
+      const response = await axios.post(
+        `${this.BASE_URL}/users/${userId}/block`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to block user:', error);
+      throw error;
+    }
+  }
+
+  async unblockUser(userId: number) {
+    try {
+      const response = await axios.delete(
+        `${this.BASE_URL}/users/${userId}/block`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to unblock user:', error);
+      throw error;
+    }
+  }
+
+  async getBlockedUsers() {
+    try {
+      const response = await axios.get(
+        `${this.BASE_URL}/users/blocked`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get blocked users:', error);
+      return [];
+    }
+  }
+
+  async getBlockStatus(userId: number) {
+    try {
+      const response = await axios.get(
+        `${this.BASE_URL}/users/${userId}/block-status`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get block status:', error);
+      return { isBlockedByMe: false, hasBlockedMe: false };
+    }
+  }
 }
 
 export const apiService = new ApiService();

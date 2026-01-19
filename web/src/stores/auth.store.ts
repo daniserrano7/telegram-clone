@@ -3,6 +3,7 @@ import { RegisterRequestDto, LoginRequestDto } from '@shared/auth.dto';
 import { type User } from '@shared/user.dto';
 import { apiService } from '../services/api.service';
 import { useChatStore } from './chat.store';
+import { useBlockStore } from './block.store';
 import {
   localStorageService,
   STORAGE_KEYS,
@@ -54,6 +55,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       await socketService.init(token);
       await useChatStore.getState().init(user);
+      await useBlockStore.getState().init(user.id);
     } catch (e) {
       console.error('Failed to initialize auth store', e);
     }
@@ -84,6 +86,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     await socketService.init(token);
     await useChatStore.getState().init(user);
+    await useBlockStore.getState().init(user.id);
     return user;
   },
   login: async ({ username, password }) => {
@@ -104,6 +107,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     await socketService.init(token);
     await useChatStore.getState().init(user);
+    await useBlockStore.getState().init(user.id);
     return user;
   },
   logout: () => {

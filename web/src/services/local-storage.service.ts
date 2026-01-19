@@ -40,23 +40,32 @@ const ThemeSettingsSchema = z.object({
   accent: AccentSchema,
 });
 
+const FontSizeSchema = z.enum(['small', 'medium', 'large']);
+
+const FontSizeSettingsSchema = z.object({
+  fontSize: FontSizeSchema,
+});
+
 // Storage keys
 export const STORAGE_KEYS = {
   USER_AUTH: 'user',
   RECENT_SEARCHES: 'recent-searches',
   THEME_SETTINGS: 'theme-storage',
+  FONT_SIZE_SETTINGS: 'font-size-settings',
 } as const;
 
 // Type definitions
 export type UserAuth = z.infer<typeof UserAuthSchema>;
 export type SearchUser = z.infer<typeof SearchUserSchema>;
 export type ThemeSettings = z.infer<typeof ThemeSettingsSchema>;
+export type FontSizeSettings = z.infer<typeof FontSizeSettingsSchema>;
 
 // Schema map for type safety
 const SCHEMA_MAP = {
   [STORAGE_KEYS.USER_AUTH]: UserAuthSchema,
   [STORAGE_KEYS.RECENT_SEARCHES]: z.array(SearchUserSchema),
   [STORAGE_KEYS.THEME_SETTINGS]: ThemeSettingsSchema,
+  [STORAGE_KEYS.FONT_SIZE_SETTINGS]: FontSizeSettingsSchema,
 } as const;
 
 type StorageKey = keyof typeof SCHEMA_MAP;

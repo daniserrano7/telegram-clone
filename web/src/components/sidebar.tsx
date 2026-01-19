@@ -30,7 +30,7 @@ type SearchUser = {
   lastSearched: Date;
 };
 
-export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
+export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => void }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [openSection, setOpenSection] = useState<'profile' | 'settings' | null>(
     null
@@ -108,7 +108,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
       });
   };
 
-  const handleUserSelect = (
+  const handleUserSelect = async (
     userId: number,
     username: string,
     avatarUrl: string | null
@@ -121,8 +121,9 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: () => void }) => {
     setRecentSearches(newRecent);
     setIsSearchFocus(false);
     setSearch('');
-    openChatWithUser(userId);
-    onChatSelect?.();
+    
+    const result = await openChatWithUser(userId);
+    onChatSelect?.(result.chatId);
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -324,7 +325,7 @@ const ChatList = ({
   onChatSelect,
   triggerSearch,
 }: {
-  onChatSelect?: () => void;
+  onChatSelect?: (chatId?: number) => void;
   triggerSearch: (search: string) => void;
 }) => {
   const chats = useChatStore((state) => state.chats);
@@ -410,9 +411,9 @@ const ChatList = ({
             key={chat.id}
             onClick={() => {
               setActiveChat(chat);
-              onChatSelect?.();
+              onChatSelect?.(chat.id);
             }}
-            className={`p-4 flex items-center space-x-3 cursor-pointer ${
+            className={`p-4 flex items-center space-x-3 cursor-pointer relative ${
               activeChat?.id === chat.id
                 ? 'bg-primary text-font-primary-contrast'
                 : 'text-font hover:bg-elevation-hover'

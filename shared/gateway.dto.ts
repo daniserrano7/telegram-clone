@@ -18,6 +18,8 @@ export const Events = {
   HEARTBEAT_RESPONSE: 'heartbeat-response',
   CONNECTION_VERIFY: 'connection-verify',
   CONNECTION_VERIFY_RESPONSE: 'connection-verify-response',
+  USER_BLOCKED: 'user-blocked',
+  USER_UNBLOCKED: 'user-unblocked',
 } as const;
 
 export type UserStatus = 'ONLINE' | 'OFFLINE';
