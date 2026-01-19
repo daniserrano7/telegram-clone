@@ -3,9 +3,11 @@ import { Events } from '@shared/gateway.dto';
 
 type Listener = (...args: any[]) => void;
 type EventName = (typeof Events)[keyof typeof Events];
+type ConnectionListener = (connected: boolean) => void;
 
 class SocketService {
   private socket: Socket | null = null;
+  private connectionListeners: Set<ConnectionListener> = new Set();
 
   /**
    * Initialise the websocket connection only once. Subsequent calls are no-ops.
@@ -20,10 +22,23 @@ class SocketService {
       },
     });
 
+    // Track connection state changes
+    this.socket.on('connect', () => {
+      this.notifyConnectionListeners(true);
+    });
+
+    this.socket.on('disconnect', () => {
+      this.notifyConnectionListeners(false);
+    });
+
     // Heartbeat handling – keeps the connection alive and verified
     this.on(Events.HEARTBEAT, () => {
       this.emit(Events.HEARTBEAT_RESPONSE);
     });
+  }
+
+  private notifyConnectionListeners(connected: boolean) {
+    this.connectionListeners.forEach((listener) => listener(connected));
   }
 
   /**
@@ -62,6 +77,24 @@ class SocketService {
    */
   isConnected(): boolean {
     return !!this.socket;
+  }
+
+  /**
+   * Whether the socket is actually connected to the server.
+   */
+  isActuallyConnected(): boolean {
+    return !!this.socket?.connected;
+  }
+
+  /**
+   * Subscribe to connection state changes
+   * @returns Unsubscribe function
+   */
+  onConnectionChange(listener: ConnectionListener): () => void {
+    this.connectionListeners.add(listener);
+    return () => {
+      this.connectionListeners.delete(listener);
+    };
   }
 
   /**

@@ -21,15 +21,14 @@ import type { EmojiClickData } from 'emoji-picker-react';
 
 // Dynamically import EmojiPicker to avoid SSR issues and hook conflicts
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
-import { BiCheck, BiCheckDouble } from 'react-icons/bi';
+import { BiCheck, BiCheckDouble, BiTime, BiError, BiX } from 'react-icons/bi';
 import { useContactsStore } from 'src/stores/contacts.store';
 import { useAuthStore } from 'src/stores/auth.store';
 import { useChatStore } from 'src/stores/chat.store';
 import { useThemeStore } from 'src/stores/theme.store';
 import { useBlockStore } from 'src/stores/block.store';
-import { type MessageStatus } from '@shared/gateway.dto';
 import { Events } from '@shared/gateway.dto';
-import { type Message } from '@shared/chat.dto';
+import { type LocalMessage, type LocalMessageStatus } from '../types/local-message';
 import { ProfileDialog } from './profile-dialog';
 import { Avatar } from './avatar';
 import { useSearchStore } from 'src/stores/search.store';
@@ -219,6 +218,7 @@ const ChatHeader = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const activeChat = useChatStore((state) => state.activeChat);
   const getChatPartner = useChatStore((state) => state.getChatPartner);
+  const isNetworkOnline = useChatStore((state) => state.isOnline);
   const partner = activeChat ? getChatPartner(activeChat) : null;
   const contacts = useContactsStore((state) => state.contacts);
   const isOnline = partner
@@ -262,6 +262,13 @@ const ChatHeader = ({
 
   return (
     <>
+      {/* Offline banner */}
+      {!isNetworkOnline && (
+        <div className="bg-yellow-500/90 text-white text-sm py-1.5 px-4 flex items-center justify-center gap-2">
+          <BiError className="w-4 h-4" />
+          <span>You're offline. Messages will be sent when you reconnect.</span>
+        </div>
+      )}
       <div className="h-[64px] px-4 flex items-center justify-between bg-background-primary border-b border-border">
         {isSearching ? (
           <div className="flex-1 flex items-center gap-3">
@@ -403,13 +410,13 @@ const MessageList = () => {
 
   if (!activeChat) return null;
 
-  const getMessageSender = (message: Message) => {
+  const getMessageSender = (message: LocalMessage) => {
     return activeChat.members.find((member) => member.id === message.senderId);
   };
 
   const getMessagePosition = (
     index: number,
-    message: Message
+    message: LocalMessage
   ): 'single' | 'first' | 'middle' | 'last' => {
     const prevMessage = index > 0 ? activeChat.messages[index - 1] : null;
     const nextMessage =
@@ -500,7 +507,7 @@ const Message = ({
   user,
   position,
 }: {
-  message: Message;
+  message: LocalMessage;
   isOwn: boolean;
   highlight?: boolean;
   searchQuery?: string;
@@ -510,6 +517,8 @@ const Message = ({
 }) => {
   const messageRef = useRef<HTMLDivElement>(null);
   const wasReadRef = useRef(false);
+  const retryMessage = useChatStore((state) => state.retryMessage);
+  const cancelMessage = useChatStore((state) => state.cancelMessage);
 
   useEffect(() => {
     if (isCurrentMatch && messageRef.current) {
@@ -641,15 +650,66 @@ const Message = ({
               hour12: false,
             })}
           </span>
-          {isOwn && <MessageStatus status={message.status} />}
+          {isOwn && (
+            <MessageStatus
+              status={message.status}
+              onRetry={
+                message.status === 'FAILED'
+                  ? () => retryMessage(message.clientMessageId)
+                  : undefined
+              }
+              onCancel={
+                message.status === 'FAILED'
+                  ? () => cancelMessage(message.clientMessageId)
+                  : undefined
+              }
+            />
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-const MessageStatus = ({ status }: { status: MessageStatus }) => {
+const MessageStatus = ({
+  status,
+  onRetry,
+  onCancel,
+}: {
+  status: LocalMessageStatus;
+  onRetry?: () => void;
+  onCancel?: () => void;
+}) => {
   switch (status) {
+    case 'PENDING':
+      return (
+        <div className="flex items-center">
+          <BiTime className="w-4 h-4 text-font-secondary animate-pulse" />
+        </div>
+      );
+    case 'FAILED':
+      return (
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="p-0.5 rounded hover:bg-elevation-hover"
+            aria-label="Retry sending message"
+            title="Retry"
+          >
+            <BiError className="w-4 h-4 text-red-500" />
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="p-0.5 rounded hover:bg-elevation-hover"
+            aria-label="Cancel message"
+            title="Cancel"
+          >
+            <BiX className="w-4 h-4 text-font-secondary" />
+          </button>
+        </div>
+      );
     case 'SENT':
       return <BiCheck className="w-5 h-5 text-font-secondary" />;
     case 'DELIVERED':
