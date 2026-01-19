@@ -12,7 +12,6 @@ import {
   LocalMessage,
   LocalMessageStatus,
   generateTempId,
-  isTempId,
 } from '../types/local-message';
 
 interface Chat {

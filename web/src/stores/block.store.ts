@@ -19,7 +19,7 @@ export const useBlockStore = create<BlockStore>((set, get) => ({
   blockedUsers: new Set(),
   blockedByUsers: new Set(),
 
-  init: async (userId: number) => {
+  init: async () => {
     try {
       const result = await apiService.getBlockedUsers();
       if (result && Array.isArray(result)) {
