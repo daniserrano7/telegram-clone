@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { DbService } from 'src/db/db.service';
 import { ChatService } from './chat.service';
 import { CreateChatRequestDto, CreateChatResponseDto } from '@shared/chat.dto';
+import { BlockService } from 'src/user/block.service';
 
 const USER_ID = 1;
 const CHAT_ID = 1;
@@ -15,7 +16,17 @@ describe('ChatService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ChatService, DbService, JwtService],
+      providers: [
+        ChatService,
+        DbService,
+        JwtService,
+        {
+          provide: BlockService,
+          useValue: {
+            isEitherBlocked: vi.fn().mockResolvedValue(false),
+          },
+        },
+      ],
     }).compile();
 
     dbService = module.get<DbService>(DbService);
@@ -38,6 +49,11 @@ describe('ChatService', () => {
     const deletedAt = null;
     const mockChat: CreateChatResponseDto = {
       id: 1,
+      type: 'DIRECT',
+      name: null,
+      description: null,
+      avatarUrl: null,
+      createdBy: null,
       members: [
         {
           id: USER_ID,
@@ -45,7 +61,6 @@ describe('ChatService', () => {
           onlineStatus: 'ONLINE',
           bio: 'bio',
           avatarUrl: 'avatarUrl',
-
           lastConnection,
           createdAt,
           updatedAt,
@@ -62,20 +77,33 @@ describe('ChatService', () => {
           updatedAt,
           deletedAt,
         },
+      ],
+      memberships: [
+        { id: 1, userId: USER_ID, role: 'MEMBER', addedBy: null, addedAt: createdAt },
+        { id: 2, userId: 2, role: 'MEMBER', addedBy: null, addedAt: createdAt },
       ],
       messages: [],
       createdAt,
     };
 
-    vi.spyOn(dbService.chat, 'findMany').mockResolvedValue([]);
+    vi.spyOn(dbService.chat, 'findFirst').mockResolvedValue(null);
     vi.spyOn(dbService.chat, 'create').mockResolvedValue({
       id: 1,
+      type: 'DIRECT',
+      name: null,
+      description: null,
+      avatarUrl: null,
+      createdBy: null,
       createdAt,
+      updatedAt,
+      deletedAt,
       members: [
         {
           id: USER_ID,
           username: 'username1',
           onlineStatus: 'ONLINE',
+          bio: 'bio',
+          avatarUrl: 'avatarUrl',
           lastConnection,
           createdAt,
           updatedAt,
@@ -85,19 +113,26 @@ describe('ChatService', () => {
           id: 2,
           username: 'username2',
           onlineStatus: 'ONLINE',
+          bio: 'bio',
+          avatarUrl: 'avatarUrl',
           lastConnection,
           createdAt,
           updatedAt,
           deletedAt,
         },
       ],
+      memberships: [
+        { id: 1, chatId: 1, userId: USER_ID, role: 'MEMBER', addedBy: null, addedAt: createdAt },
+        { id: 2, chatId: 1, userId: 2, role: 'MEMBER', addedBy: null, addedAt: createdAt },
+      ],
       messages: [],
     } as Prisma.ChatGetPayload<{
-      include: { members: true; messages: true };
+      include: { members: true; memberships: true; messages: true };
     }>);
 
     const chat = await service.createChat(createChatDto.userIds);
-    expect(chat).toEqual(mockChat);
+    expect(chat.id).toEqual(mockChat.id);
+    expect(chat.type).toEqual('DIRECT');
   });
 
   it('throws an error if chat already exists', async () => {
@@ -106,9 +141,17 @@ describe('ChatService', () => {
       content: 'Hello',
     };
 
-    vi.spyOn(dbService.chat, 'findMany').mockResolvedValue([
-      { id: 1, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
-    ]);
+    vi.spyOn(dbService.chat, 'findFirst').mockResolvedValue({
+      id: 1,
+      type: 'DIRECT',
+      name: null,
+      description: null,
+      avatarUrl: null,
+      createdBy: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    });
 
     await expect(
       service.createChat(createChatDto.userIds),
@@ -116,20 +159,13 @@ describe('ChatService', () => {
   });
 
   it('should get a chat', async () => {
-    const chat: Prisma.ChatGetPayload<{
-      include: {
-        members: {
-          select: {
-            id: true;
-            username: true;
-            createdAt: true;
-            updatedAt: true;
-            deletedAt: true;
-          };
-        };
-      };
-    }> = {
+    const chat = {
       id: CHAT_ID,
+      type: 'DIRECT',
+      name: null,
+      description: null,
+      avatarUrl: null,
+      createdBy: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
@@ -137,6 +173,10 @@ describe('ChatService', () => {
         {
           id: USER_ID,
           username: 'username1',
+          bio: null,
+          avatarUrl: null,
+          onlineStatus: 'ONLINE',
+          lastConnection: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,
@@ -144,14 +184,20 @@ describe('ChatService', () => {
         {
           id: 2,
           username: 'username2',
+          bio: null,
+          avatarUrl: null,
+          onlineStatus: 'ONLINE',
+          lastConnection: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,
         },
       ],
+      memberships: [],
+      messages: [],
     };
 
-    vi.spyOn(dbService.chat, 'findUnique').mockResolvedValue(chat);
+    vi.spyOn(dbService.chat, 'findUnique').mockResolvedValue(chat as any);
 
     const response = await service.getChat(CHAT_ID);
     expect(response).toEqual(chat);
@@ -168,11 +214,14 @@ describe('ChatService', () => {
   });
 
   it("should get all user's chats", async () => {
-    const chats: Prisma.ChatGetPayload<{
-      include: { members: true };
-    }>[] = [
+    const chats = [
       {
         id: 1,
+        type: 'DIRECT',
+        name: null,
+        description: null,
+        avatarUrl: null,
+        createdBy: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
@@ -183,7 +232,6 @@ describe('ChatService', () => {
             onlineStatus: 'ONLINE',
             bio: 'bio',
             avatarUrl: 'avatarUrl',
-            password: 'password',
             lastConnection: new Date(),
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -195,16 +243,22 @@ describe('ChatService', () => {
             onlineStatus: 'ONLINE',
             bio: 'bio',
             avatarUrl: 'avatarUrl',
-            password: 'password',
             lastConnection: new Date(),
             createdAt: new Date(),
             updatedAt: new Date(),
             deletedAt: null,
           },
         ],
+        memberships: [],
+        messages: [],
       },
       {
-        id: 1,
+        id: 2,
+        type: 'DIRECT',
+        name: null,
+        description: null,
+        avatarUrl: null,
+        createdBy: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
@@ -215,7 +269,6 @@ describe('ChatService', () => {
             bio: 'bio',
             avatarUrl: 'avatarUrl',
             onlineStatus: 'ONLINE',
-            password: 'password',
             lastConnection: new Date(),
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -227,17 +280,18 @@ describe('ChatService', () => {
             onlineStatus: 'ONLINE',
             bio: 'bio',
             avatarUrl: 'avatarUrl',
-            password: 'password',
             lastConnection: new Date(),
             createdAt: new Date(),
             updatedAt: new Date(),
             deletedAt: null,
           },
         ],
+        memberships: [],
+        messages: [],
       },
     ];
 
-    vi.spyOn(dbService.chat, 'findMany').mockResolvedValue(chats);
+    vi.spyOn(dbService.chat, 'findMany').mockResolvedValue(chats as any);
 
     const response = await service.getUserChats(USER_ID);
     expect(response).toEqual(chats);

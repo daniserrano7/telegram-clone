@@ -20,7 +20,17 @@ export const Events = {
   CONNECTION_VERIFY_RESPONSE: 'connection-verify-response',
   USER_BLOCKED: 'user-blocked',
   USER_UNBLOCKED: 'user-unblocked',
+  // Group events
+  GROUP_UPDATED: 'group-updated',
+  MEMBER_ADDED: 'member-added',
+  MEMBER_REMOVED: 'member-removed',
+  MEMBER_LEFT: 'member-left',
+  MEMBER_ROLE_CHANGED: 'member-role-changed',
+  SYSTEM_MESSAGE: 'system-message',
 } as const;
 
 export type UserStatus = 'ONLINE' | 'OFFLINE';
 export type MessageStatus = 'SENT' | 'DELIVERED' | 'READ';
+export type ChatType = 'DIRECT' | 'GROUP';
+export type ChatMemberRole = 'ADMIN' | 'MEMBER';
+export type MessageType = 'USER' | 'SYSTEM';

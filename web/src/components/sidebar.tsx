@@ -7,6 +7,7 @@ import {
   HiOutlineXMark,
   HiOutlineBars3,
   HiOutlineTrash,
+  HiOutlineUserGroup,
 } from 'react-icons/hi2';
 import { apiService } from 'src/services/api.service';
 import { useChatStore } from 'src/stores/chat.store';
@@ -15,6 +16,7 @@ import { SettingsPanel } from 'src/components/settings-panel';
 import { ProfileDialog } from 'src/components/profile-dialog';
 import { useContactsStore } from 'src/stores/contacts.store';
 import { ThemeSettingsDialog } from './theme-settings-dialog';
+import { CreateGroupDialog } from './create-group-dialog';
 
 type ChatPreview = {
   id: UserId;
@@ -40,6 +42,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
   const [isSearching, setIsSearching] = useState(false);
   const [foundUsers, setFoundUsers] = useState<ChatPreview[]>([]);
   const [focusedUserIndex, setFocusedUserIndex] = useState<number>(-1);
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const userListRef = useRef<HTMLDivElement>(null);
   const [recentSearches, setRecentSearches] = useRecentSearches();
@@ -204,9 +207,17 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
           onClose={() => setOpenSection(null)}
         />
       ) : null}
+      {/* Create Group Dialog */}
+      <CreateGroupDialog
+        isOpen={isCreateGroupOpen}
+        onClose={() => setIsCreateGroupOpen(false)}
+        onGroupCreated={(chatId) => {
+          onChatSelect?.(chatId);
+        }}
+      />
       <div className="px-4 flex-shrink-0 h-[64px] flex gap-3 items-center border-b border-border">
         {/* Settings Button */}
-        <button 
+        <button
           data-testid="settings-menu-button"
           onClick={() => setIsSettingsOpen(true)}
         >
@@ -269,6 +280,14 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
             </div>
           </div>
         </form>
+        {/* Create Group Button */}
+        <button
+          onClick={() => setIsCreateGroupOpen(true)}
+          className="p-2 hover:bg-elevation-hover rounded-full transition-colors flex-shrink-0"
+          title="Create Group"
+        >
+          <HiOutlineUserGroup className="size-[22px] text-icon-subtle hover:text-icon" />
+        </button>
       </div>
       {/* Search Results */}
       {isSearchFocus ? (
@@ -332,7 +351,9 @@ const ChatList = ({
   const isLoading = useChatStore((state) => state.isLoading);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const activeChat = useChatStore((state) => state.activeChat);
-  const findPartner = useChatStore((state) => state.getChatPartner);
+  const getChatPartner = useChatStore((state) => state.getChatPartner);
+  const getChatName = useChatStore((state) => state.getChatName);
+  const getChatAvatar = useChatStore((state) => state.getChatAvatar);
   const contacts = useContactsStore((state) => state.contacts);
 
   if (isLoading) {
@@ -399,12 +420,27 @@ const ChatList = ({
   return (
     <div className="flex-1 overflow-y-auto">
       {sortedChats.map((chat) => {
-        const partner = findPartner(chat);
-        if (!partner) return null;
+        const isGroup = chat.type === 'GROUP';
+        const partner = !isGroup ? getChatPartner(chat) : null;
+        const chatName = getChatName(chat);
+        const chatAvatar = getChatAvatar(chat);
 
-        const contact = contacts[partner.id];
-        const status = contact?.onlineStatus;
-        const isOnline = status === 'ONLINE';
+        // For direct chats, check if partner is online
+        const contact = partner ? contacts[partner.id] : null;
+        const isOnline = contact?.onlineStatus === 'ONLINE';
+
+        // Get the last message preview
+        const lastMessage = chat.messages[chat.messages.length - 1];
+        let lastMessagePreview = lastMessage?.content || 'No messages yet';
+
+        // For system messages, show as-is
+        // For group messages from others, prefix with sender name
+        if (lastMessage && lastMessage.type === 'USER' && isGroup && lastMessage.senderId) {
+          const sender = chat.members.find(m => m.id === lastMessage.senderId);
+          if (sender) {
+            lastMessagePreview = `${sender.username}: ${lastMessage.content}`;
+          }
+        }
 
         return (
           <div
@@ -421,16 +457,19 @@ const ChatList = ({
           >
             <div className="relative">
               <Avatar
-                username={partner.username}
-                src={partner.avatarUrl}
+                username={chatAvatar.username || chatName}
+                src={chatAvatar.src ?? null}
                 size={48}
               />
-              <div
-                className={cx(
-                  'absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-background-primary rounded-full',
-                  isOnline ? 'bg-green-500' : 'bg-gray-500'
-                )}
-              />
+              {/* Only show online indicator for direct chats */}
+              {!isGroup && (
+                <div
+                  className={cx(
+                    'absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-background-primary rounded-full',
+                    isOnline ? 'bg-green-500' : 'bg-gray-500'
+                  )}
+                />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center">
@@ -441,7 +480,7 @@ const ChatList = ({
                       : 'text-font'
                   }`}
                 >
-                  {partner.username}
+                  {chatName}
                 </h3>
                 <span
                   className={`text-xs ${
@@ -460,8 +499,7 @@ const ChatList = ({
                     : 'text-font-subtle'
                 }`}
               >
-                {chat.messages[chat.messages.length - 1]?.content ||
-                  'No messages yet'}
+                {lastMessagePreview}
               </p>
             </div>
           </div>
