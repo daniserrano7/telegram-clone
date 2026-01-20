@@ -13,12 +13,17 @@ import {
   Query,
   Logger,
   Patch,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { type Multer } from 'multer';
 import { ChatService } from './chat.service';
 import { AuthGuard } from '../auth/auth.guard';
 import type { Request, Response } from 'express';
 import { ChatGateway } from './chat.gateway';
 import { UserService } from '../user/user.service';
+import { UploadService } from '../upload/upload.service';
 import {
   CreateGroupRequestDto,
   UpdateGroupRequestDto,
@@ -34,6 +39,7 @@ export class ChatController {
     private readonly chatService: ChatService,
     private readonly chatGateway: ChatGateway,
     private readonly userService: UserService,
+    private readonly uploadService: UploadService,
   ) {}
 
   // ==================== DIRECT CHAT ENDPOINTS ====================
@@ -173,6 +179,46 @@ export class ChatController {
       return res.status(HttpStatus.OK).json(chat);
     } catch (error) {
       this.logger.error('Failed to update group:', error);
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: error.message,
+      });
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('groups/:chatId/avatar')
+  @UseInterceptors(FileInterceptor('avatar'))
+  async updateGroupAvatar(
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Req() req: Request & { user: { id: number } },
+    @UploadedFile() file: Multer.File,
+    @Res() res: Response,
+  ) {
+    try {
+      const avatarUrl = await this.uploadService.saveAvatar(file);
+      const chat = await this.chatService.updateGroup(
+        chatId,
+        req.user.id,
+        { avatarUrl },
+      );
+
+      // Get user who updated for system message
+      const user = await this.userService.getUserById(req.user.id);
+
+      // Create system message for avatar change
+      await this.chatService.createSystemMessage(
+        chatId,
+        `${user.username} changed the group photo`,
+        { type: 'GROUP_AVATAR_CHANGED', userId: req.user.id },
+      );
+
+      // Emit update event to all members
+      const memberIds = chat.members.map((m) => m.id);
+      this.chatGateway.emitGroupUpdated(chatId, chat, memberIds);
+
+      return res.status(HttpStatus.OK).json({ avatarUrl });
+    } catch (error) {
+      this.logger.error('Failed to update group avatar:', error);
       return res.status(HttpStatus.FORBIDDEN).json({
         message: error.message,
       });

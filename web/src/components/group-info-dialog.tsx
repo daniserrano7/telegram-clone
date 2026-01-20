@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
   HiOutlineXMark,
@@ -8,6 +8,7 @@ import {
   HiOutlineTrash,
   HiOutlineShieldCheck,
   HiOutlineUser,
+  HiOutlineCamera,
 } from 'react-icons/hi2';
 import cx from 'classix';
 import { useChatStore } from 'src/stores/chat.store';
@@ -40,6 +41,9 @@ export const GroupInfoDialog = ({ isOpen, onClose }: GroupInfoDialogProps) => {
   const [foundUsers, setFoundUsers] = useState<{ id: number; username: string; avatarUrl: string | null }[]>([]);
   const [isAddingMembers, setIsAddingMembers] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<number | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen || !activeChat || activeChat.type !== 'GROUP') return null;
 
@@ -168,6 +172,47 @@ export const GroupInfoDialog = ({ isOpen, onClose }: GroupInfoDialogProps) => {
     }
   };
 
+  const handleAvatarClick = () => {
+    if (!isAdmin) return;
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !chatId) return;
+
+    if (!file.type.startsWith('image/')) {
+      console.error('Invalid file type. Please select an image.');
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      console.error('File is too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const result = await apiService.updateGroupAvatar(chatId, file);
+      if (result.status === 'success') {
+        // Refetch the chat to get updated avatar
+        fetchChat(chatId);
+
+        // Force re-render with timestamp
+        const timestamp = new Date().getTime();
+        setAvatarUrl(`${result.data.avatarUrl}?t=${timestamp}`);
+      }
+    } catch (error) {
+      console.error('Failed to upload group avatar:', error);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const getMemberRole = (userId: number): ChatMemberRole => {
     const membership = activeChat.memberships?.find((m) => m.userId === userId);
     return membership?.role || 'MEMBER';
@@ -204,11 +249,37 @@ export const GroupInfoDialog = ({ isOpen, onClose }: GroupInfoDialogProps) => {
         <div className="flex-1 overflow-y-auto p-4">
           {/* Group avatar and name */}
           <div className="flex flex-col items-center mb-6">
-            <Avatar
-              username={activeChat.name || 'Group'}
-              src={activeChat.avatarUrl}
-              size={80}
-            />
+            <div className="relative">
+              <Avatar
+                username={activeChat.name || 'Group'}
+                src={avatarUrl || activeChat.avatarUrl}
+                size={80}
+                key={avatarUrl}
+              />
+              {isAdmin && (
+                <button
+                  onClick={handleAvatarClick}
+                  disabled={isUploadingAvatar}
+                  className={cx(
+                    'absolute bottom-0 right-0 p-2 rounded-full bg-primary text-white',
+                    'hover:bg-primary/90 transition-colors',
+                    isUploadingAvatar && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  <HiOutlineCamera className="w-5 h-5" />
+                </button>
+              )}
+              {isAdmin && (
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  key={isUploadingAvatar ? 'uploading' : 'idle'}
+                />
+              )}
+            </div>
 
             {isEditing ? (
               <div className="mt-4 w-full space-y-3">

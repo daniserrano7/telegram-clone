@@ -381,6 +381,29 @@ export class ApiService {
     }
   }
 
+  async updateGroupAvatar(chatId: number, file: File) {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await axios.post(
+        `${this.BASE_URL}/chats/groups/${chatId}/avatar`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return { status: 'success', data: response.data };
+    } catch (error) {
+      console.error('Failed to update group avatar:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      return { status: 'error', error };
+    }
+  }
+
   async updateGroup(chatId: number, updates: UpdateGroupRequestDto): ServiceResponse<GetChatResponseDto> {
     try {
       const res = await fetch(`${this.BASE_URL}/chats/groups/${chatId}`, {
