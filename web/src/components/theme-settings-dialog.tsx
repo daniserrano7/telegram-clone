@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { useThemeStore, Accent } from 'src/stores/theme.store';
+import { useThemeStore, Accent, FontSize } from 'src/stores/theme.store';
 import { HiOutlineXMark } from 'react-icons/hi2';
 import cx from 'classix';
 import 'src/styles/animations.css';
@@ -15,11 +15,18 @@ const ACCENT_COLORS: { name: Accent; color: string }[] = [
   { name: 'orange', color: '#f97316' },
 ] as const;
 
+const FONT_SIZES: { name: FontSize; label: string; preview: string }[] = [
+  { name: 'small', label: 'Small', preview: 'Aa' },
+  { name: 'medium', label: 'Medium', preview: 'Aa' },
+  { name: 'large', label: 'Large', preview: 'Aa' },
+  { name: 'extra-large', label: 'Extra Large', preview: 'Aa' },
+] as const;
+
 export const ThemeSettingsDialog = ({
   isOpen,
   onClose,
 }: ThemeSettingsDialogProps) => {
-  const { accent, setAccent, theme, setTheme } = useThemeStore();
+  const { accent, setAccent, theme, setTheme, fontSize, setFontSize } = useThemeStore();
   const user = useAuthStore((state) => state.user);
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -27,10 +34,10 @@ export const ThemeSettingsDialog = ({
         <Dialog.Overlay className="fixed inset-0 bg-black/50 dialog-overlay" />
         <Dialog.Content
           className={cx(
-            'fixed left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2',
-            'w-[95%] sm:w-[400px] max-w-[400px]',
+            'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
+            'w-[95%] sm:w-[400px] max-w-[400px] max-h-[90vh]',
             'bg-background-primary rounded-lg shadow-xl',
-            'focus:outline-none dialog-content'
+            'focus:outline-none dialog-content overflow-y-auto'
           )}
           aria-describedby={undefined}
         >
@@ -162,18 +169,51 @@ export const ThemeSettingsDialog = ({
                       )}
                     </button>
                   ))}
-                  {/* <button
-                    className={cx(
-                      'w-full aspect-square rounded-full relative bg-elevation-hover',
-                      'transition-transform hover:scale-110 focus:scale-110',
-                      'focus:outline-none focus:ring-2 focus:ring-offset-2',
-                      'focus:ring-offset-background-primary focus:ring-primary/50',
-                      'flex items-center justify-center text-lg'
-                    )}
-                  >
-                    ✨
-                  </button> */}
                 </div>
+              </div>
+
+              {/* Message Font Size */}
+              <div className="mt-8">
+                <h3 className="text-sm font-medium text-font-subtle mb-4">
+                  Message Text Size
+                </h3>
+                <div className="grid grid-cols-4 gap-3">
+                  {FONT_SIZES.map((size) => (
+                    <button
+                      key={size.name}
+                      onClick={() => setFontSize(size.name)}
+                      className={cx(
+                        'flex flex-col items-center justify-center p-4 rounded-lg',
+                        'border-2 transition-all hover:bg-elevation-hover',
+                        fontSize === size.name
+                          ? 'border-primary bg-elevation'
+                          : 'border-border'
+                      )}
+                    >
+                      <span
+                        className="font-medium text-font mb-1"
+                        style={{
+                          fontSize:
+                            size.name === 'small'
+                              ? '12px'
+                              : size.name === 'medium'
+                              ? '16px'
+                              : size.name === 'large'
+                              ? '20px'
+                              : '28px',
+                        }}
+                      >
+                        {size.preview}
+                      </span>
+                      <span className="text-xs text-font-subtle">
+                        {size.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-font-subtle mt-3">
+                  Changes the size of message text in chats
+                </p>
               </div>
             </div>
           </div>

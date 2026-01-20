@@ -4,7 +4,7 @@ import {
   STORAGE_KEYS,
 } from '../services/local-storage.service';
 
-export type FontSize = 'small' | 'medium' | 'large';
+export type FontSize = 'small' | 'medium' | 'large' | 'extra-large';
 
 interface FontSizeState {
   fontSize: FontSize;
@@ -12,7 +12,7 @@ interface FontSizeState {
 }
 
 // Font size configuration with base text size and emoji ratio
-const FONT_SIZE_CONFIG = {
+const FONT_SIZE_CONFIG: Record<FontSize, { baseSize: string; emojiSize: string }> = {
   small: {
     baseSize: '0.875rem', // 14px
     emojiSize: '1.125rem', // 18px (1.28x ratio)
@@ -24,6 +24,10 @@ const FONT_SIZE_CONFIG = {
   large: {
     baseSize: '1.125rem', // 18px
     emojiSize: '1.5rem', // 24px (1.33x ratio)
+  },
+  'extra-large': {
+    baseSize: '1.25rem', // 20px
+    emojiSize: '1.75rem', // 28px (1.4x ratio)
   },
 } as const;
 
