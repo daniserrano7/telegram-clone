@@ -30,6 +30,7 @@ import { useBlockStore } from 'src/stores/block.store';
 import { Events } from '@shared/gateway.dto';
 import { type LocalMessage, type LocalMessageStatus } from '../types/local-message';
 import { ProfileDialog } from './profile-dialog';
+import { GroupInfoDialog } from './group-info-dialog';
 import { Avatar } from './avatar';
 import { useSearchStore } from 'src/stores/search.store';
 import { formatLastActive } from 'src/utils/date';
@@ -214,6 +215,7 @@ const ChatHeader = ({
   showBackButton,
 }: ChatHeaderProps) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const activeChat = useChatStore((state) => state.activeChat);
@@ -273,8 +275,8 @@ const ChatHeader = ({
 
   const handleHeaderClick = () => {
     if (isGroup) {
-      // For groups, toggle chat info panel which will show group info
-      toggleChatInfo();
+      // For groups, open group info dialog
+      setIsGroupInfoOpen(true);
     } else {
       // For direct chats, open profile dialog
       setIsProfileOpen(true);
@@ -394,6 +396,12 @@ const ChatHeader = ({
           isOpen={isProfileOpen}
           onClose={() => setIsProfileOpen(false)}
           viewUser={partner}
+        />
+      )}
+      {isGroup && (
+        <GroupInfoDialog
+          isOpen={isGroupInfoOpen}
+          onClose={() => setIsGroupInfoOpen(false)}
         />
       )}
     </>

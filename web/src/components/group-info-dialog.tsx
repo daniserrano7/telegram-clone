@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import {
   HiOutlineXMark,
   HiOutlinePencil,
@@ -14,6 +15,7 @@ import { useAuthStore } from 'src/stores/auth.store';
 import { apiService } from 'src/services/api.service';
 import { Avatar } from './avatar';
 import { ChatMemberRole } from '@shared/gateway.dto';
+import 'src/styles/animations.css';
 
 interface GroupInfoDialogProps {
   isOpen: boolean;
@@ -172,22 +174,31 @@ export const GroupInfoDialog = ({ isOpen, onClose }: GroupInfoDialogProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-
-      {/* Dialog */}
-      <div className="relative w-full max-w-md mx-4 bg-background-primary rounded-lg shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
-          <h2 className="text-lg font-semibold text-font">Group Info</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-elevation-hover rounded-full transition-colors"
-          >
-            <HiOutlineXMark className="w-5 h-5 text-icon-subtle" />
-          </button>
-        </div>
+    <Dialog.Root
+      open={isOpen}
+      onOpenChange={(open: boolean) => !open && onClose()}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/50 dialog-overlay z-50" />
+        <Dialog.Content
+          className={cx(
+            'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50',
+            'w-[95%] sm:w-[450px] max-w-[450px] max-h-[90vh]',
+            'bg-background-primary rounded-lg shadow-xl',
+            'focus:outline-none dialog-content flex flex-col overflow-hidden'
+          )}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
+            <Dialog.Title className="text-lg font-semibold text-font">
+              Group Info
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button className="p-2 hover:bg-elevation-hover rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                <HiOutlineXMark className="w-5 h-5 text-icon-subtle" />
+              </button>
+            </Dialog.Close>
+          </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
@@ -395,18 +406,19 @@ export const GroupInfoDialog = ({ isOpen, onClose }: GroupInfoDialogProps) => {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-border flex-shrink-0">
-          <button
-            onClick={handleLeaveGroup}
-            disabled={isLeaving}
-            className="w-full flex items-center justify-center gap-2 py-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-          >
-            <HiOutlineArrowRightOnRectangle className="w-5 h-5" />
-            {isLeaving ? 'Leaving...' : 'Leave Group'}
-          </button>
-        </div>
-      </div>
-    </div>
+          {/* Footer */}
+          <div className="p-4 border-t border-border flex-shrink-0">
+            <button
+              onClick={handleLeaveGroup}
+              disabled={isLeaving}
+              className="w-full flex items-center justify-center gap-2 py-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+            >
+              <HiOutlineArrowRightOnRectangle className="w-5 h-5" />
+              {isLeaving ? 'Leaving...' : 'Leave Group'}
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 };
