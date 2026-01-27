@@ -42,6 +42,14 @@ export const NotificationPermissionRequest = ({
     ) {
       setIsVisible(true);
     }
+
+    // If permission is already granted, ensure subscription is registered
+    // This handles cases where the subscription was lost but permission is still granted
+    if (currentPermission === 'granted' && notificationConfig.isConfigured()) {
+      notificationService.subscribeToPush().catch((error) => {
+        console.error('Failed to re-register push subscription:', error);
+      });
+    }
   }, [autoShow]);
 
   const handleRequestPermission = async () => {
@@ -188,24 +196,32 @@ export const NotificationStatus = () => {
     }
   };
 
+  const [testStatus, setTestStatus] = useState<string | null>(null);
+
   const handleTestNotification = async () => {
     if (permission !== 'granted') return;
 
+    setTestStatus('Sending...');
+
     try {
       // Try backend notification first (real push notification)
-      await notificationService.sendTestNotification();
-    } catch (error) {
-      console.error(
-        'Backend test notification failed, falling back to local:',
-        error
-      );
+      const result = await notificationService.sendTestNotification();
+      if (result.status === 'success') {
+        setTestStatus('Sent!');
+      } else {
+        setTestStatus(result.message || 'Failed');
+        console.error('Test notification response:', result);
+      }
+    } catch (error: any) {
+      console.error('Backend test notification failed:', error);
+      setTestStatus('Error');
 
       // Fallback to local notification
       try {
         await notificationService.showLocalNotification(
           'Test Notification (Local)',
           {
-            body: 'This is a local test notification. Backend notifications may not be configured.',
+            body: 'Backend push failed. This is a local notification.',
             icon: '/favicon.ico',
           }
         );
@@ -213,6 +229,9 @@ export const NotificationStatus = () => {
         console.error('Failed to show local test notification:', localError);
       }
     }
+
+    // Clear status after 3 seconds
+    setTimeout(() => setTestStatus(null), 3000);
   };
 
   if (!notificationService.isNotificationSupported()) {
@@ -251,9 +270,17 @@ export const NotificationStatus = () => {
       {permission === 'granted' && (
         <button
           onClick={handleTestNotification}
-          className="px-3 py-1 text-xs bg-elevation-hover border border-border rounded-md hover:bg-elevation-hover/80 transition-colors text-font-subtle"
+          disabled={testStatus === 'Sending...'}
+          className={cx(
+            "px-3 py-1 text-xs border rounded-md transition-colors",
+            testStatus === 'Sent!'
+              ? "bg-green-500/20 border-green-500 text-green-600"
+              : testStatus === 'Error' || testStatus?.includes('Failed')
+              ? "bg-red-500/20 border-red-500 text-red-600"
+              : "bg-elevation-hover border-border text-font-subtle hover:bg-elevation-hover/80"
+          )}
         >
-          Test
+          {testStatus || 'Test'}
         </button>
       )}
     </div>
