@@ -30,6 +30,7 @@ import { useBlockStore } from 'src/stores/block.store';
 import { Events } from '@shared/gateway.dto';
 import { type LocalMessage, type LocalMessageStatus } from '../types/local-message';
 import { ProfileDialog } from './profile-dialog';
+import { GroupInfoDialog } from './group-info-dialog';
 import { Avatar } from './avatar';
 import { useSearchStore } from 'src/stores/search.store';
 import { formatLastActive } from 'src/utils/date';
@@ -214,10 +215,13 @@ const ChatHeader = ({
   showBackButton,
 }: ChatHeaderProps) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const activeChat = useChatStore((state) => state.activeChat);
   const getChatPartner = useChatStore((state) => state.getChatPartner);
+  const getChatName = useChatStore((state) => state.getChatName);
+  const getChatAvatar = useChatStore((state) => state.getChatAvatar);
   const isNetworkOnline = useChatStore((state) => state.isOnline);
   const partner = activeChat ? getChatPartner(activeChat) : null;
   const contacts = useContactsStore((state) => state.contacts);
@@ -231,6 +235,10 @@ const ChatHeader = ({
     ? typingStatus.isTyping && typingStatus.chatId === activeChat?.id
     : false;
   const isBlocked = useBlockStore((state) => state.isBlocked(partner?.id || 0));
+
+  const isGroup = activeChat?.type === 'GROUP';
+  const chatName = activeChat ? getChatName(activeChat) : '';
+  const chatAvatar = activeChat ? getChatAvatar(activeChat) : { username: '', src: null };
 
   const {
     searchQuery,
@@ -248,9 +256,14 @@ const ChatHeader = ({
     }
   }, [isSearching]);
 
-  if (!activeChat || !partner) return null;
+  if (!activeChat) return null;
+  // For direct chats, we need a partner
+  if (!isGroup && !partner) return null;
 
   const getStatusText = () => {
+    if (isGroup) {
+      return `${activeChat.members.length} members`;
+    }
     if (isBlocked) return 'Blocked';
     if (isTyping) return 'Typing...';
     if (isOnline) return 'Online';
@@ -258,6 +271,16 @@ const ChatHeader = ({
       return `Last seen ${formatLastActive(lastConnection)}`;
     }
     return 'Offline';
+  };
+
+  const handleHeaderClick = () => {
+    if (isGroup) {
+      // For groups, open group info dialog
+      setIsGroupInfoOpen(true);
+    } else {
+      // For direct chats, open profile dialog
+      setIsProfileOpen(true);
+    }
   };
 
   return (
@@ -320,28 +343,30 @@ const ChatHeader = ({
                 </button>
               )}
               <button
-                onClick={() => setIsProfileOpen(true)}
+                onClick={handleHeaderClick}
                 className="flex items-center space-x-3 hover:bg-elevation-hover -ml-1 px-2 py-1 rounded-lg transition-colors"
               >
                 <div className="relative">
                   <Avatar
-                    username={partner.username}
+                    username={chatAvatar.username || chatName}
                     size={40}
-                    src={partner.avatarUrl}
+                    src={chatAvatar.src ?? null}
                   />
-                  <div
-                    className={cx(
-                      'absolute bottom-0 right-0 w-3 h-3 border-2 border-background-primary rounded-full',
-                      isOnline ? 'bg-green-500' : 'bg-gray-500'
-                    )}
-                  />
+                  {!isGroup && (
+                    <div
+                      className={cx(
+                        'absolute bottom-0 right-0 w-3 h-3 border-2 border-background-primary rounded-full',
+                        isOnline ? 'bg-green-500' : 'bg-gray-500'
+                      )}
+                    />
+                  )}
                 </div>
                 <div className="text-start">
-                  <h2 className="text-font font-medium">{partner.username}</h2>
+                  <h2 className="text-font font-medium">{chatName}</h2>
                   <span
                     className={cx(
                       'text-sm',
-                      isBlocked ? 'text-red-500' : 'text-font-subtle'
+                      !isGroup && isBlocked ? 'text-red-500' : 'text-font-subtle'
                     )}
                   >
                     {getStatusText()}
@@ -366,11 +391,19 @@ const ChatHeader = ({
           </>
         )}
       </div>
-      <ProfileDialog
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        viewUser={partner}
-      />
+      {partner && (
+        <ProfileDialog
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          viewUser={partner}
+        />
+      )}
+      {isGroup && (
+        <GroupInfoDialog
+          isOpen={isGroupInfoOpen}
+          onClose={() => setIsGroupInfoOpen(false)}
+        />
+      )}
     </>
   );
 };
@@ -387,6 +420,8 @@ const MessageList = () => {
   const listRef = useRef<HTMLDivElement>(null);
   const { searchQuery, currentMatchIndex, totalMatches, setTotalMatches } =
     useSearchStore();
+
+  const isGroup = activeChat?.type === 'GROUP';
 
   useEffect(() => {
     if (listRef.current) {
@@ -418,19 +453,35 @@ const MessageList = () => {
     index: number,
     message: LocalMessage
   ): 'single' | 'first' | 'middle' | 'last' => {
+    // System messages are always 'single'
+    if (message.type === 'SYSTEM') return 'single';
+
     const prevMessage = index > 0 ? activeChat.messages[index - 1] : null;
     const nextMessage =
       index < activeChat.messages.length - 1
         ? activeChat.messages[index + 1]
         : null;
 
-    const isPrevSameSender = prevMessage?.senderId === message.senderId;
-    const isNextSameSender = nextMessage?.senderId === message.senderId;
+    // Skip system messages when determining position
+    const isPrevSameSender = prevMessage?.type !== 'SYSTEM' && prevMessage?.senderId === message.senderId;
+    const isNextSameSender = nextMessage?.type !== 'SYSTEM' && nextMessage?.senderId === message.senderId;
 
     if (!isPrevSameSender && !isNextSameSender) return 'single';
     if (!isPrevSameSender && isNextSameSender) return 'first';
     if (isPrevSameSender && isNextSameSender) return 'middle';
     return 'last';
+  };
+
+  // Check if we should show sender name (first message in a group from this sender)
+  const shouldShowSenderName = (index: number, message: LocalMessage): boolean => {
+    if (!isGroup) return false;
+    if (message.type === 'SYSTEM') return false;
+    if (message.senderId === userId) return false; // Don't show name for own messages
+
+    const prevMessage = index > 0 ? activeChat.messages[index - 1] : null;
+    if (!prevMessage) return true;
+    if (prevMessage.type === 'SYSTEM') return true;
+    return prevMessage.senderId !== message.senderId;
   };
 
   return (
@@ -452,6 +503,7 @@ const MessageList = () => {
 
           const sender = getMessageSender(message);
           const position = getMessagePosition(index, message);
+          const showSenderName = shouldShowSenderName(index, message);
 
           return (
             <div key={message.id}>
@@ -484,6 +536,8 @@ const MessageList = () => {
                 isCurrentMatch={matchIndex === currentMatchIndex}
                 user={sender}
                 position={position}
+                showSenderName={showSenderName}
+                isGroup={isGroup}
               />
             </div>
           );
@@ -506,6 +560,8 @@ const Message = ({
   isCurrentMatch = false,
   user,
   position,
+  showSenderName = false,
+  isGroup = false,
 }: {
   message: LocalMessage;
   isOwn: boolean;
@@ -514,11 +570,15 @@ const Message = ({
   isCurrentMatch?: boolean;
   user?: { username: string; avatarUrl: string | null };
   position: 'single' | 'first' | 'middle' | 'last';
+  showSenderName?: boolean;
+  isGroup?: boolean;
 }) => {
   const messageRef = useRef<HTMLDivElement>(null);
   const wasReadRef = useRef(false);
   const retryMessage = useChatStore((state) => state.retryMessage);
   const cancelMessage = useChatStore((state) => state.cancelMessage);
+
+  const isSystemMessage = message.type === 'SYSTEM';
 
   useEffect(() => {
     if (isCurrentMatch && messageRef.current) {
@@ -543,13 +603,14 @@ const Message = ({
         isMessageNotRead &&
         isMessageNotOwn &&
         isMessageNotAlreadyRead &&
-        isSocketConnected
+        isSocketConnected &&
+        !isSystemMessage
       ) {
         wasReadRef.current = true;
         socketService.emit(Events.MESSAGE_READ, { messageId: message.id });
       }
     },
-    [message.id, isOwn, message.status]
+    [message.id, isOwn, message.status, isSystemMessage]
   );
 
   useEffect(() => {
@@ -582,6 +643,20 @@ const Message = ({
     ));
   };
 
+  // Render system message differently
+  if (isSystemMessage) {
+    return (
+      <div
+        ref={messageRef}
+        className="flex justify-center my-2"
+      >
+        <div className="bg-[rgba(74,102,72,0.6)] dark:bg-[rgba(24,37,51,0.8)] text-white text-xs px-3 py-1 rounded-full max-w-[80%] text-center">
+          {message.content}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={messageRef}
@@ -591,11 +666,13 @@ const Message = ({
         position === 'last' || position === 'single' ? 'mb-4' : ''
       )}
     >
-      {/* Avatar - only visible on lg screens */}
+      {/* Avatar - only visible on lg screens for direct chats, always for groups */}
       {(position === 'last' || position === 'single') && user ? (
-        <div className="hidden lg:block flex-shrink-0">
+        <div className={cx('flex-shrink-0', !isGroup && 'hidden lg:block')}>
           <Avatar username={user.username} src={user.avatarUrl} size={32} />
         </div>
+      ) : isGroup && !isOwn ? (
+        <div className="w-8 flex-shrink-0" /> // Spacer for alignment
       ) : null}
 
       {/* Message content */}
@@ -625,10 +702,17 @@ const Message = ({
           !isOwn &&
             position === 'last' &&
             'rounded-2xl rounded-tl-md rounded-bl-none',
-          position === 'last' || position === 'single' ? '' : 'lg:ml-10',
+          (position === 'last' || position === 'single') ? '' : (isGroup && !isOwn ? 'ml-0' : 'lg:ml-10'),
           isCurrentMatch && 'ring-2 ring-primary'
         )}
       >
+        {/* Sender name for group chats */}
+        {showSenderName && user && (
+          <div className="text-xs font-medium text-primary mb-0.5">
+            {user.username}
+          </div>
+        )}
+
         <div className="text-font message-content">
           {renderMessageContent(
             message.content,
@@ -737,6 +821,7 @@ const MessageInput = () => {
   const emitTypingStatus = useContactsStore((state) => state.emitTypingStatus);
   const theme = useThemeStore((state) => state.theme);
   const isEitherBlocked = useBlockStore((state) => state.isEitherBlocked);
+  const currentUser = useAuthStore((state) => state.user);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
@@ -746,8 +831,15 @@ const MessageInput = () => {
     height: 400,
   });
 
+  const isGroup = activeChat?.type === 'GROUP';
   const partner = activeChat ? getChatPartner(activeChat) : null;
-  const blocked = partner ? isEitherBlocked(partner.id) : false;
+  // Only check blocking for direct chats, not groups
+  const blocked = !isGroup && partner ? isEitherBlocked(partner.id) : false;
+
+  // Check if user is still a member of the group
+  const isNotMember = isGroup && currentUser
+    ? !activeChat.members.some((member) => member.id === currentUser.id)
+    : false;
 
   // Set picker dimensions based on screen size
   useEffect(() => {
@@ -817,6 +909,16 @@ const MessageInput = () => {
       <div className="p-4 bg-background-primary border-t border-border text-center">
         <p className="text-font-subtle text-sm">
           You cannot send messages to this user
+        </p>
+      </div>
+    );
+  }
+
+  if (isNotMember) {
+    return (
+      <div className="p-4 bg-background-primary border-t border-border text-center">
+        <p className="text-font-subtle text-sm">
+          You are no longer a member of this group
         </p>
       </div>
     );

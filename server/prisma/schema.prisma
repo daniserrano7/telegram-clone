@@ -15,6 +15,8 @@ model User {
   avatarUrl         String?
   messages          Message[]            @relation("SentMessages")
   chats             Chat[]               @relation("UserChats")
+  memberships       ChatMembership[]     @relation("UserMemberships")
+  createdChats      Chat[]               @relation("ChatCreator")
   pushSubscriptions PushSubscription[]
   blockedUsers      BlockedUser[]        @relation("BlockedByUser")
   blockedByUsers    BlockedUser[]        @relation("BlockedUsers")
@@ -30,26 +32,64 @@ enum UserOnlineStatus {
   OFFLINE
 }
 
+enum ChatType {
+  DIRECT
+  GROUP
+}
+
+enum ChatMemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum MessageType {
+  USER
+  SYSTEM
+}
+
 model Chat {
-  id        Int       @id @default(autoincrement())
-  members   User[]    @relation("UserChats")
-  messages  Message[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  id          Int              @id @default(autoincrement())
+  type        ChatType         @default(DIRECT)
+  name        String?
+  description String?
+  avatarUrl   String?
+  createdBy   Int?
+  creator     User?            @relation("ChatCreator", fields: [createdBy], references: [id])
+  members     User[]           @relation("UserChats")
+  memberships ChatMembership[]
+  messages    Message[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
 
   @@map("Chat")
+}
+
+model ChatMembership {
+  id      Int            @id @default(autoincrement())
+  chat    Chat           @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chatId  Int
+  user    User           @relation("UserMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  userId  Int
+  role    ChatMemberRole @default(MEMBER)
+  addedBy Int?
+  addedAt DateTime       @default(now())
+
+  @@unique([chatId, userId])
+  @@map("chat_memberships")
 }
 
 model Message {
   id        Int           @id @default(autoincrement())
   content   String
-  chat      Chat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  chatId    Int          @map("chatId")
-  sender    User         @relation("SentMessages", fields: [senderId], references: [id])
-  senderId  Int
+  type      MessageType   @default(USER)
+  chat      Chat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chatId    Int           @map("chatId")
+  sender    User?         @relation("SentMessages", fields: [senderId], references: [id])
+  senderId  Int?
   status    MessageStatus @default(SENT)
-  createdAt DateTime     @default(now())
+  metadata  Json?
+  createdAt DateTime      @default(now())
   deletedAt DateTime?
 }
 

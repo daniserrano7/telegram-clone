@@ -15,7 +15,7 @@ import { ChatService } from './chat.service';
 import { UserService } from 'src/user/user.service';
 import { UserId } from '@shared/user.dto';
 import { WsAuthGuard } from 'src/auth/auth.guard';
-import { Events } from '@shared/gateway.dto';
+import { Events, ChatMemberRole } from '@shared/gateway.dto';
 import { UserStatusService } from '../user/user-status.service';
 import { NotificationService } from '../notification/notification.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -301,6 +301,74 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     userIds.forEach((userId) => {
       this.server.to(`user_${userId}`).emit(Events.NEW_CHAT, chatId);
     });
+  }
+
+  // ==================== GROUP EVENT EMITTERS ====================
+
+  emitGroupUpdated(chatId: number, chat: unknown, memberIds: number[]) {
+    // Emit to chat room
+    this.server.to(`chat_${chatId}`).emit(Events.GROUP_UPDATED, chat);
+    // Also emit to user rooms for members not in chat room
+    memberIds.forEach((userId) => {
+      this.server.to(`user_${userId}`).emit(Events.GROUP_UPDATED, chat);
+    });
+  }
+
+  emitMembersAdded(chatId: number, newUserIds: number[], allMemberIds: number[]) {
+    // Notify existing members in chat room
+    this.server.to(`chat_${chatId}`).emit(Events.MEMBER_ADDED, {
+      chatId,
+      userIds: newUserIds,
+    });
+
+    // Notify new members to join the chat (they receive NEW_CHAT)
+    newUserIds.forEach((userId) => {
+      this.server.to(`user_${userId}`).emit(Events.NEW_CHAT, chatId);
+    });
+  }
+
+  emitMemberRemoved(
+    chatId: number,
+    removedUserId: number,
+    remainingMemberIds: number[],
+  ) {
+    // Notify remaining members
+    this.server.to(`chat_${chatId}`).emit(Events.MEMBER_REMOVED, {
+      chatId,
+      userId: removedUserId,
+    });
+
+    // Notify the removed user
+    this.server.to(`user_${removedUserId}`).emit(Events.MEMBER_REMOVED, {
+      chatId,
+      userId: removedUserId,
+      wasRemoved: true,
+    });
+  }
+
+  emitMemberLeft(chatId: number, userId: number, remainingMemberIds: number[]) {
+    // Notify remaining members
+    this.server.to(`chat_${chatId}`).emit(Events.MEMBER_LEFT, {
+      chatId,
+      userId,
+    });
+  }
+
+  emitMemberRoleChanged(
+    chatId: number,
+    userId: number,
+    role: ChatMemberRole,
+    memberIds: number[],
+  ) {
+    this.server.to(`chat_${chatId}`).emit(Events.MEMBER_ROLE_CHANGED, {
+      chatId,
+      userId,
+      role,
+    });
+  }
+
+  emitSystemMessage(chatId: number, message: unknown) {
+    this.server.to(`chat_${chatId}`).emit(Events.SYSTEM_MESSAGE, message);
   }
 
   // Add new event handlers for message status

@@ -319,7 +319,7 @@ class NotificationService {
   }
 
   // Send test notification via backend
-  async sendTestNotification(): Promise<void> {
+  async sendTestNotification(): Promise<ApiResponse> {
     const user = localStorageService.get('user');
     const token = user?.token;
     if (!token) {
@@ -340,11 +340,13 @@ class NotificationService {
 
       const result: ApiResponse = await response.json();
 
-      if (!response.ok || result.status === 'error') {
+      console.log('Test notification response:', result);
+
+      if (!response.ok) {
         throw new Error(result.message || 'Failed to send test notification');
       }
 
-      console.log('Test notification sent via backend');
+      return result;
     } catch (error) {
       console.error('Failed to send test notification:', error);
       throw error;

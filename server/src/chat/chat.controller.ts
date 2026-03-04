@@ -12,11 +12,24 @@ import {
   Delete,
   Query,
   Logger,
+  Patch,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { type Multer } from 'multer';
 import { ChatService } from './chat.service';
 import { AuthGuard } from '../auth/auth.guard';
 import type { Request, Response } from 'express';
 import { ChatGateway } from './chat.gateway';
+import { UserService } from '../user/user.service';
+import { UploadService } from '../upload/upload.service';
+import {
+  CreateGroupRequestDto,
+  UpdateGroupRequestDto,
+  AddMembersRequestDto,
+} from '@shared/chat.dto';
+import { ChatMemberRole } from '@shared/gateway.dto';
 
 @Controller('chats')
 export class ChatController {
@@ -25,7 +38,11 @@ export class ChatController {
   constructor(
     private readonly chatService: ChatService,
     private readonly chatGateway: ChatGateway,
+    private readonly userService: UserService,
+    private readonly uploadService: UploadService,
   ) {}
+
+  // ==================== DIRECT CHAT ENDPOINTS ====================
 
   @UseGuards(AuthGuard)
   @Post()
@@ -63,6 +80,319 @@ export class ChatController {
       });
     }
   }
+
+  // ==================== GROUP CHAT ENDPOINTS ====================
+
+  @UseGuards(AuthGuard)
+  @Post('groups')
+  async createGroup(
+    @Req() req: Request & { user: { id: number } },
+    @Body() body: CreateGroupRequestDto,
+    @Res() res: Response,
+  ) {
+    const userId = req.user.id;
+    const { name, description, avatarUrl, userIds, content } = body;
+
+    if (!name || name.trim() === '') {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Group name is required',
+      });
+    }
+
+    if (!userIds || userIds.length < 1) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'At least one other member is required',
+      });
+    }
+
+    try {
+      // Include creator in member list
+      const allMemberIds = [...new Set([userId, ...userIds])];
+
+      const chat = await this.chatService.createGroup(allMemberIds, userId, {
+        name,
+        description,
+        avatarUrl,
+      });
+
+      // Add initial message if provided
+      if (content) {
+        await this.chatService.addMessage(chat.id, userId, content);
+      }
+
+      // Get creator's username for system message
+      const creator = await this.userService.getUserById(userId);
+
+      // Create system message
+      await this.chatService.createSystemMessage(
+        chat.id,
+        `${creator.username} created the group "${name}"`,
+        { type: 'GROUP_CREATED', userId },
+      );
+
+      const updatedChat = await this.chatService.getChat(chat.id);
+
+      // Emit to all members
+      this.chatGateway.emitNewChat(chat.id, allMemberIds);
+
+      return res.status(HttpStatus.CREATED).json(updatedChat);
+    } catch (error) {
+      this.logger.error('Failed to create group:', error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Failed to create group',
+        error: error.message,
+      });
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch('groups/:chatId')
+  async updateGroup(
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Req() req: Request & { user: { id: number } },
+    @Body() updates: UpdateGroupRequestDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const chat = await this.chatService.updateGroup(
+        chatId,
+        req.user.id,
+        updates,
+      );
+
+      // Get user who updated for system message
+      const user = await this.userService.getUserById(req.user.id);
+
+      // Create system message for significant changes
+      if (updates.name) {
+        await this.chatService.createSystemMessage(
+          chatId,
+          `${user.username} changed the group name to "${updates.name}"`,
+          { type: 'GROUP_NAME_CHANGED', userId: req.user.id, name: updates.name },
+        );
+      }
+
+      // Emit update event to all members
+      const memberIds = chat.members.map((m) => m.id);
+      this.chatGateway.emitGroupUpdated(chatId, chat, memberIds);
+
+      return res.status(HttpStatus.OK).json(chat);
+    } catch (error) {
+      this.logger.error('Failed to update group:', error);
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: error.message,
+      });
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('groups/:chatId/avatar')
+  @UseInterceptors(FileInterceptor('avatar'))
+  async updateGroupAvatar(
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Req() req: Request & { user: { id: number } },
+    @UploadedFile() file: Multer.File,
+    @Res() res: Response,
+  ) {
+    try {
+      const avatarUrl = await this.uploadService.saveAvatar(file);
+      const chat = await this.chatService.updateGroup(
+        chatId,
+        req.user.id,
+        { avatarUrl },
+      );
+
+      // Get user who updated for system message
+      const user = await this.userService.getUserById(req.user.id);
+
+      // Create system message for avatar change
+      await this.chatService.createSystemMessage(
+        chatId,
+        `${user.username} changed the group photo`,
+        { type: 'GROUP_AVATAR_CHANGED', userId: req.user.id },
+      );
+
+      // Emit update event to all members
+      const memberIds = chat.members.map((m) => m.id);
+      this.chatGateway.emitGroupUpdated(chatId, chat, memberIds);
+
+      return res.status(HttpStatus.OK).json({ avatarUrl });
+    } catch (error) {
+      this.logger.error('Failed to update group avatar:', error);
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: error.message,
+      });
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('groups/:chatId/members')
+  async addMembers(
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Req() req: Request & { user: { id: number } },
+    @Body() body: AddMembersRequestDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const chat = await this.chatService.addMembers(
+        chatId,
+        body.userIds,
+        req.user.id,
+      );
+
+      // Get usernames for system messages
+      const adder = await this.userService.getUserById(req.user.id);
+
+      for (const userId of body.userIds) {
+        const addedUser = await this.userService.getUserById(userId);
+        await this.chatService.createSystemMessage(
+          chatId,
+          `${adder.username} added ${addedUser.username}`,
+          { type: 'MEMBER_ADDED', addedBy: req.user.id, userId },
+        );
+      }
+
+      // Emit to all members including new ones
+      const allMemberIds = chat.members.map((m) => m.id);
+      this.chatGateway.emitMembersAdded(chatId, body.userIds, allMemberIds);
+
+      return res.status(HttpStatus.OK).json(chat);
+    } catch (error) {
+      this.logger.error('Failed to add members:', error);
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: error.message,
+      });
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('groups/:chatId/members/:userId')
+  async removeMember(
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Param('userId', ParseIntPipe) userIdToRemove: number,
+    @Req() req: Request & { user: { id: number } },
+    @Res() res: Response,
+  ) {
+    try {
+      // Get usernames before removal for system message
+      const remover = await this.userService.getUserById(req.user.id);
+      const removedUser = await this.userService.getUserById(userIdToRemove);
+
+      const chat = await this.chatService.removeMember(
+        chatId,
+        userIdToRemove,
+        req.user.id,
+      );
+
+      // Create system message
+      await this.chatService.createSystemMessage(
+        chatId,
+        `${remover.username} removed ${removedUser.username}`,
+        { type: 'MEMBER_REMOVED', removedBy: req.user.id, userId: userIdToRemove },
+      );
+
+      // Emit to remaining members and the removed user
+      const remainingMemberIds = chat.members.map((m) => m.id);
+      this.chatGateway.emitMemberRemoved(
+        chatId,
+        userIdToRemove,
+        remainingMemberIds,
+      );
+
+      return res.status(HttpStatus.OK).json(chat);
+    } catch (error) {
+      this.logger.error('Failed to remove member:', error);
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: error.message,
+      });
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('groups/:chatId/leave')
+  async leaveGroup(
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Req() req: Request & { user: { id: number } },
+    @Res() res: Response,
+  ) {
+    try {
+      // Get username for system message
+      const user = await this.userService.getUserById(req.user.id);
+
+      // Get chat before leaving to know remaining members
+      const chat = await this.chatService.getChat(chatId);
+
+      await this.chatService.leaveGroup(chatId, req.user.id);
+
+      // Create system message
+      await this.chatService.createSystemMessage(
+        chatId,
+        `${user.username} left the group`,
+        { type: 'MEMBER_LEFT', userId: req.user.id },
+      );
+
+      // Emit to remaining members
+      const remainingMemberIds = chat.members
+        .filter((m) => m.id !== req.user.id)
+        .map((m) => m.id);
+      this.chatGateway.emitMemberLeft(chatId, req.user.id, remainingMemberIds);
+
+      return res.status(HttpStatus.NO_CONTENT).send();
+    } catch (error) {
+      this.logger.error('Failed to leave group:', error);
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: error.message,
+      });
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch('groups/:chatId/members/:userId/role')
+  async updateMemberRole(
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Param('userId', ParseIntPipe) targetUserId: number,
+    @Req() req: Request & { user: { id: number } },
+    @Body('role') role: ChatMemberRole,
+    @Res() res: Response,
+  ) {
+    if (!role || !['ADMIN', 'MEMBER'].includes(role)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Valid role (ADMIN or MEMBER) is required',
+      });
+    }
+
+    try {
+      const chat = await this.chatService.updateMemberRole(
+        chatId,
+        targetUserId,
+        role,
+        req.user.id,
+      );
+
+      // Get usernames for system message
+      const updater = await this.userService.getUserById(req.user.id);
+      const targetUser = await this.userService.getUserById(targetUserId);
+
+      const roleText = role === 'ADMIN' ? 'an admin' : 'a member';
+      await this.chatService.createSystemMessage(
+        chatId,
+        `${updater.username} made ${targetUser.username} ${roleText}`,
+        { type: 'MEMBER_ROLE_CHANGED', updatedBy: req.user.id, userId: targetUserId, role },
+      );
+
+      const memberIds = chat.members.map((m) => m.id);
+      this.chatGateway.emitMemberRoleChanged(chatId, targetUserId, role, memberIds);
+
+      return res.status(HttpStatus.OK).json(chat);
+    } catch (error) {
+      this.logger.error('Failed to update member role:', error);
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: error.message,
+      });
+    }
+  }
+
+  // ==================== COMMON ENDPOINTS ====================
 
   // Get chat by ID
   @UseGuards(AuthGuard)

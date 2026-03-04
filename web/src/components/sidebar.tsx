@@ -7,7 +7,10 @@ import {
   HiOutlineXMark,
   HiOutlineBars3,
   HiOutlineTrash,
+  HiOutlineUserGroup,
+  HiOutlineInformationCircle,
 } from 'react-icons/hi2';
+import { Link } from 'react-router-dom';
 import { apiService } from 'src/services/api.service';
 import { useChatStore } from 'src/stores/chat.store';
 import { useAuthStore } from 'src/stores/auth.store';
@@ -15,6 +18,7 @@ import { SettingsPanel } from 'src/components/settings-panel';
 import { ProfileDialog } from 'src/components/profile-dialog';
 import { useContactsStore } from 'src/stores/contacts.store';
 import { ThemeSettingsDialog } from './theme-settings-dialog';
+import { CreateGroupDialog } from './create-group-dialog';
 
 type ChatPreview = {
   id: UserId;
@@ -30,16 +34,21 @@ type SearchUser = {
   lastSearched: Date;
 };
 
-export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => void }) => {
+export const Sidebar = ({
+  onChatSelect,
+}: {
+  onChatSelect?: (chatId?: number) => void;
+}) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [openSection, setOpenSection] = useState<'profile' | 'settings' | null>(
-    null
+    null,
   );
   const [isSearchFocus, setIsSearchFocus] = useState(false);
   const [search, setSearch] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [foundUsers, setFoundUsers] = useState<ChatPreview[]>([]);
   const [focusedUserIndex, setFocusedUserIndex] = useState<number>(-1);
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const userListRef = useRef<HTMLDivElement>(null);
   const [recentSearches, setRecentSearches] = useRecentSearches();
@@ -75,7 +84,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
         name: user.username,
         avatarUrl: user.avatarUrl,
         description: `Last searched ${new Date(
-          user.lastSearched
+          user.lastSearched,
         ).toLocaleDateString()}`,
       }));
     }
@@ -96,7 +105,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
                 name: u.username,
                 description: '',
                 avatarUrl: u.avatarUrl || null,
-              }))
+              })),
           );
         }
       })
@@ -111,7 +120,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
   const handleUserSelect = async (
     userId: number,
     username: string,
-    avatarUrl: string | null
+    avatarUrl: string | null,
   ) => {
     const newRecent = [
       { id: userId, username, lastSearched: new Date(), avatarUrl },
@@ -121,7 +130,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
     setRecentSearches(newRecent);
     setIsSearchFocus(false);
     setSearch('');
-    
+
     const result = await openChatWithUser(userId);
     onChatSelect?.(result.chatId);
   };
@@ -159,7 +168,7 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
       handleUserSelect(
         selectedUser.id,
         selectedUser.name,
-        selectedUser.avatarUrl
+        selectedUser.avatarUrl,
       );
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -204,9 +213,17 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
           onClose={() => setOpenSection(null)}
         />
       ) : null}
+      {/* Create Group Dialog */}
+      <CreateGroupDialog
+        isOpen={isCreateGroupOpen}
+        onClose={() => setIsCreateGroupOpen(false)}
+        onGroupCreated={(chatId) => {
+          onChatSelect?.(chatId);
+        }}
+      />
       <div className="px-4 flex-shrink-0 h-[64px] flex gap-3 items-center border-b border-border">
         {/* Settings Button */}
-        <button 
+        <button
           data-testid="settings-menu-button"
           onClick={() => setIsSettingsOpen(true)}
         >
@@ -233,10 +250,10 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
               }}
               onKeyDown={handleSearchKeyDown}
               className={cx(
-                'w-full rounded-full py-2 pl-4 pr-20 text-font placeholder-font-subtle focus:outline-none focus:ring-2 focus:ring-primary-light',
+                'w-full rounded-full py-2 pl-4 pr-9 text-font placeholder-font-subtle focus:outline-none focus:ring-2 focus:ring-primary-light',
                 isSearchFocus
                   ? 'bg-transparent'
-                  : 'bg-input-background hover:bg-input-background-hover active:bg-input-background-active'
+                  : 'bg-input-background hover:bg-input-background-hover active:bg-input-background-active',
               )}
               aria-controls="search-results"
               aria-expanded={isSearchFocus}
@@ -269,6 +286,14 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
             </div>
           </div>
         </form>
+        {/* Create Group Button */}
+        <button
+          onClick={() => setIsCreateGroupOpen(true)}
+          className="p-2 hover:bg-elevation-hover rounded-full transition-colors flex-shrink-0"
+          title="Create Group"
+        >
+          <HiOutlineUserGroup className="size-[22px] text-icon-subtle hover:text-icon" />
+        </button>
       </div>
       {/* Search Results */}
       {isSearchFocus ? (
@@ -295,6 +320,34 @@ export const Sidebar = ({ onChatSelect }: { onChatSelect?: (chatId?: number) => 
           }}
         />
       )}
+      {/* Footer links */}
+      <div className="border-t border-border px-3 py-2 grid grid-cols-2 gap-1">
+        <Link
+          to="/about"
+          title="About this project"
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-font-subtle hover:text-font hover:bg-elevation-hover transition-colors text-xs font-medium"
+        >
+          <HiOutlineInformationCircle className="w-4 h-4 shrink-0" />
+          <span>About</span>
+        </Link>
+        <a
+          href="https://github.com/daniserrano7/telegram-clone"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="View source on GitHub"
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-font-subtle hover:text-font hover:bg-elevation-hover transition-colors text-xs font-medium"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-4 h-4 shrink-0"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.835 2.807 1.305 3.492.998.108-.775.418-1.305.762-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23A11.5 11.5 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.29-1.552 3.297-1.23 3.297-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.807 5.625-5.48 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .319.216.694.825.576C20.565 21.795 24 17.298 24 12c0-6.63-5.37-12-12-12z" />
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
     </div>
   );
 };
@@ -332,7 +385,9 @@ const ChatList = ({
   const isLoading = useChatStore((state) => state.isLoading);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const activeChat = useChatStore((state) => state.activeChat);
-  const findPartner = useChatStore((state) => state.getChatPartner);
+  const getChatPartner = useChatStore((state) => state.getChatPartner);
+  const getChatName = useChatStore((state) => state.getChatName);
+  const getChatAvatar = useChatStore((state) => state.getChatAvatar);
   const contacts = useContactsStore((state) => state.contacts);
 
   if (isLoading) {
@@ -399,12 +454,34 @@ const ChatList = ({
   return (
     <div className="flex-1 overflow-y-auto">
       {sortedChats.map((chat) => {
-        const partner = findPartner(chat);
-        if (!partner) return null;
+        const isGroup = chat.type === 'GROUP';
+        const partner = !isGroup ? getChatPartner(chat) : null;
+        const chatName = getChatName(chat);
+        const chatAvatar = getChatAvatar(chat);
 
-        const contact = contacts[partner.id];
-        const status = contact?.onlineStatus;
-        const isOnline = status === 'ONLINE';
+        // For direct chats, check if partner is online
+        const contact = partner ? contacts[partner.id] : null;
+        const isOnline = contact?.onlineStatus === 'ONLINE';
+
+        // Get the last message preview
+        const lastMessage = chat.messages[chat.messages.length - 1];
+        let lastMessagePreview = lastMessage?.content || 'No messages yet';
+
+        // For system messages, show as-is
+        // For group messages from others, prefix with sender name
+        if (
+          lastMessage &&
+          lastMessage.type === 'USER' &&
+          isGroup &&
+          lastMessage.senderId
+        ) {
+          const sender = chat.members.find(
+            (m) => m.id === lastMessage.senderId,
+          );
+          if (sender) {
+            lastMessagePreview = `${sender.username}: ${lastMessage.content}`;
+          }
+        }
 
         return (
           <div
@@ -421,16 +498,19 @@ const ChatList = ({
           >
             <div className="relative">
               <Avatar
-                username={partner.username}
-                src={partner.avatarUrl}
+                username={chatAvatar.username || chatName}
+                src={chatAvatar.src ?? null}
                 size={48}
               />
-              <div
-                className={cx(
-                  'absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-background-primary rounded-full',
-                  isOnline ? 'bg-green-500' : 'bg-gray-500'
-                )}
-              />
+              {/* Only show online indicator for direct chats */}
+              {!isGroup && (
+                <div
+                  className={cx(
+                    'absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-background-primary rounded-full',
+                    isOnline ? 'bg-green-500' : 'bg-gray-500',
+                  )}
+                />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center">
@@ -441,7 +521,7 @@ const ChatList = ({
                       : 'text-font'
                   }`}
                 >
-                  {partner.username}
+                  {chatName}
                 </h3>
                 <span
                   className={`text-xs ${
@@ -460,8 +540,7 @@ const ChatList = ({
                     : 'text-font-subtle'
                 }`}
               >
-                {chat.messages[chat.messages.length - 1]?.content ||
-                  'No messages yet'}
+                {lastMessagePreview}
               </p>
             </div>
           </div>
@@ -490,7 +569,7 @@ const SearchList = ({
   onUserSelect: (
     userId: number,
     username: string,
-    avatarUrl: string | null
+    avatarUrl: string | null,
   ) => void;
   focusedUserIndex: number;
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
@@ -507,7 +586,7 @@ const SearchList = ({
         name: user.username,
         avatarUrl: user.avatarUrl,
         description: `Last searched ${new Date(
-          user.lastSearched
+          user.lastSearched,
         ).toLocaleDateString()}`,
       }));
 
@@ -582,7 +661,7 @@ const UserListItem = ({
       'px-4 py-2 flex items-center space-x-3 cursor-pointer transition-colors',
       isActive
         ? 'bg-primary text-font-primary-contrast ring-2 ring-primary-light ring-opacity-75'
-        : 'text-font hover:bg-elevation-hover'
+        : 'text-font hover:bg-elevation-hover',
     )}
     onMouseDown={onClick}
     role="option"
@@ -595,7 +674,7 @@ const UserListItem = ({
     <div>
       <h4
         className={cx(
-          isActive ? 'text-font-primary-contrast dark:text-font' : 'text-font'
+          isActive ? 'text-font-primary-contrast dark:text-font' : 'text-font',
         )}
       >
         {user.name}
@@ -606,7 +685,7 @@ const UserListItem = ({
             'text-sm',
             isActive
               ? 'text-font-primary-contrast dark:text-font'
-              : 'text-font-subtle'
+              : 'text-font-subtle',
           )}
         >
           {user.description}

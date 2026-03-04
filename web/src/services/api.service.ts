@@ -7,7 +7,14 @@ import {
   ErrorResponseDto,
 } from '@shared/auth.dto';
 import { GetUserResponseDto } from '@shared/user.dto';
-import { GetChatResponseDto, CreateChatRequestDto } from '@shared/chat.dto';
+import {
+  GetChatResponseDto,
+  CreateChatRequestDto,
+  CreateGroupRequestDto,
+  UpdateGroupRequestDto,
+  AddMembersRequestDto,
+} from '@shared/chat.dto';
+import { ChatMemberRole } from '@shared/gateway.dto';
 import axios from 'axios';
 
 type ServiceResponse<T> = Promise<
@@ -347,6 +354,170 @@ export class ApiService {
       return { isBlockedByMe: false, hasBlockedMe: false };
     }
   }
+
+  // ==================== GROUP METHODS ====================
+
+  async createGroup(data: CreateGroupRequestDto): ServiceResponse<GetChatResponseDto> {
+    try {
+      const res = await fetch(`${this.BASE_URL}/chats/groups`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (res.status !== 201) {
+        const errorData = (await res.json()) as ErrorResponseDto;
+        return { status: 'error', errorMsg: errorData.error || 'Failed to create group' };
+      }
+
+      const chat: SwapDatesWithStrings<GetChatResponseDto> = await res.json();
+      return { status: 'success', data: parseChat(chat) };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred';
+      return { status: 'error', errorMsg };
+    }
+  }
+
+  async updateGroupAvatar(chatId: number, file: File) {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await axios.post(
+        `${this.BASE_URL}/chats/groups/${chatId}/avatar`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return { status: 'success', data: response.data };
+    } catch (error) {
+      console.error('Failed to update group avatar:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      return { status: 'error', error };
+    }
+  }
+
+  async updateGroup(chatId: number, updates: UpdateGroupRequestDto): ServiceResponse<GetChatResponseDto> {
+    try {
+      const res = await fetch(`${this.BASE_URL}/chats/groups/${chatId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (res.status !== 200) {
+        const errorData = (await res.json()) as ErrorResponseDto;
+        return { status: 'error', errorMsg: errorData.error || 'Failed to update group' };
+      }
+
+      const chat: SwapDatesWithStrings<GetChatResponseDto> = await res.json();
+      return { status: 'success', data: parseChat(chat) };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred';
+      return { status: 'error', errorMsg };
+    }
+  }
+
+  async addGroupMembers(chatId: number, userIds: number[]): ServiceResponse<GetChatResponseDto> {
+    try {
+      const res = await fetch(`${this.BASE_URL}/chats/groups/${chatId}/members`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: JSON.stringify({ userIds } as AddMembersRequestDto),
+      });
+
+      if (res.status !== 200) {
+        const errorData = (await res.json()) as ErrorResponseDto;
+        return { status: 'error', errorMsg: errorData.error || 'Failed to add members' };
+      }
+
+      const chat: SwapDatesWithStrings<GetChatResponseDto> = await res.json();
+      return { status: 'success', data: parseChat(chat) };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred';
+      return { status: 'error', errorMsg };
+    }
+  }
+
+  async removeGroupMember(chatId: number, userId: number): ServiceResponse<GetChatResponseDto> {
+    try {
+      const res = await fetch(`${this.BASE_URL}/chats/groups/${chatId}/members/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
+
+      if (res.status !== 200) {
+        const errorData = (await res.json()) as ErrorResponseDto;
+        return { status: 'error', errorMsg: errorData.error || 'Failed to remove member' };
+      }
+
+      const chat: SwapDatesWithStrings<GetChatResponseDto> = await res.json();
+      return { status: 'success', data: parseChat(chat) };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred';
+      return { status: 'error', errorMsg };
+    }
+  }
+
+  async leaveGroup(chatId: number): ServiceResponse<void> {
+    try {
+      const res = await fetch(`${this.BASE_URL}/chats/groups/${chatId}/leave`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
+
+      if (res.status !== 204) {
+        const errorData = (await res.json()) as ErrorResponseDto;
+        return { status: 'error', errorMsg: errorData.error || 'Failed to leave group' };
+      }
+
+      return { status: 'success', data: undefined };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred';
+      return { status: 'error', errorMsg };
+    }
+  }
+
+  async updateMemberRole(chatId: number, userId: number, role: ChatMemberRole): ServiceResponse<GetChatResponseDto> {
+    try {
+      const res = await fetch(`${this.BASE_URL}/chats/groups/${chatId}/members/${userId}/role`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: JSON.stringify({ role }),
+      });
+
+      if (res.status !== 200) {
+        const errorData = (await res.json()) as ErrorResponseDto;
+        return { status: 'error', errorMsg: errorData.error || 'Failed to update role' };
+      }
+
+      const chat: SwapDatesWithStrings<GetChatResponseDto> = await res.json();
+      return { status: 'success', data: parseChat(chat) };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'An error occurred';
+      return { status: 'error', errorMsg };
+    }
+  }
 }
 
 export const apiService = new ApiService();
@@ -367,6 +538,10 @@ const parseChat = (
   updatedAt: new Date(chat.updatedAt),
   deletedAt: chat.deletedAt ? new Date(chat.deletedAt) : null,
   members: chat.members.map(parseUser),
+  memberships: (chat.memberships || []).map((membership) => ({
+    ...membership,
+    addedAt: new Date(membership.addedAt),
+  })),
   messages: chat.messages.map((message) => ({
     ...message,
     createdAt: new Date(message.createdAt),

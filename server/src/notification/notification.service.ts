@@ -16,6 +16,13 @@ interface NotificationPayload {
   icon?: string;
   badge?: string;
   tag?: string;
+  image?: string; // Large banner image
+  vibrate?: number[]; // Vibration pattern [duration, pause, duration, ...]
+  requireInteraction?: boolean; // Keep notification until dismissed
+  silent?: boolean; // No sound/vibration
+  dir?: 'auto' | 'ltr' | 'rtl'; // Text direction
+  lang?: string; // Language code
+  timestamp?: number; // Custom timestamp
   data?: any;
 }
 
@@ -33,13 +40,20 @@ export class NotificationService {
     const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:admin@telegram-clone.com';
 
     if (!vapidPublicKey || !vapidPrivateKey) {
-      this.logger.warn('VAPID keys not configured. Push notifications will not work.');
+      this.logger.error('VAPID keys not configured! Push notifications will NOT work.');
+      this.logger.error(`  VAPID_PUBLIC_KEY: ${vapidPublicKey ? 'SET' : 'MISSING'}`);
+      this.logger.error(`  VAPID_PRIVATE_KEY: ${vapidPrivateKey ? 'SET' : 'MISSING'}`);
       return;
     }
 
-    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
-    
-    this.logger.log('Web push VAPID configured successfully');
+    try {
+      webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+      this.logger.log('Web push VAPID configured successfully');
+      this.logger.log(`  Subject: ${vapidSubject}`);
+      this.logger.log(`  Public key (first 20 chars): ${vapidPublicKey.substring(0, 20)}...`);
+    } catch (error) {
+      this.logger.error('Failed to configure VAPID:', error.message);
+    }
   }
 
   // Store push subscription for a user
@@ -102,32 +116,50 @@ export class NotificationService {
   }
 
   // Send notification to specific user
-  async sendNotificationToUser(userId: number, payload: NotificationPayload) {
+  async sendNotificationToUser(userId: number, payload: NotificationPayload): Promise<{ sent: number; failed: number; total: number }> {
     const subscriptions = await this.getUserSubscriptions(userId);
-    
+
     if (subscriptions.length === 0) {
-      this.logger.debug(`No push subscriptions found for user ${userId}`);
-      return;
+      this.logger.warn(`No push subscriptions found for user ${userId}`);
+      return { sent: 0, failed: 0, total: 0 };
     }
 
-    const notificationPromises = subscriptions.map(subscription => 
+    this.logger.log(`Found ${subscriptions.length} subscription(s) for user ${userId}`);
+
+    const notificationPromises = subscriptions.map(subscription =>
       this.sendToSubscription(subscription, payload)
     );
 
     const results = await Promise.allSettled(notificationPromises);
-    
-    // Clean up invalid subscriptions
-    const failedSubscriptions = results
-      .map((result, index) => ({ result, subscription: subscriptions[index] }))
-      .filter(({ result }) => result.status === 'rejected')
-      .map(({ subscription }) => subscription);
 
-    if (failedSubscriptions.length > 0) {
-      await this.cleanupInvalidSubscriptions(failedSubscriptions);
+    // Log detailed results and collect subscriptions that should be cleaned up (410 Gone only)
+    const subscriptionsToCleanup: any[] = [];
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const error = result.reason;
+        this.logger.error(`Notification ${index + 1} failed: ${error?.message || error}`);
+
+        // Only clean up subscriptions that are truly invalid (410 Gone)
+        if (error?.statusCode === 410) {
+          subscriptionsToCleanup.push(subscriptions[index]);
+        }
+      } else {
+        this.logger.log(`Notification ${index + 1} sent successfully`);
+      }
+    });
+
+    // Clean up only invalid subscriptions (410 Gone)
+    if (subscriptionsToCleanup.length > 0) {
+      await this.cleanupInvalidSubscriptions(subscriptionsToCleanup);
     }
 
     const successCount = results.filter(r => r.status === 'fulfilled').length;
+    const failedCount = results.filter(r => r.status === 'rejected').length;
+
     this.logger.log(`Sent ${successCount}/${subscriptions.length} notifications to user ${userId}`);
+
+    return { sent: successCount, failed: failedCount, total: subscriptions.length };
   }
 
   // Send notification to multiple users
@@ -150,7 +182,7 @@ export class NotificationService {
       },
     };
 
-    const notificationPayload = {
+    const notificationPayload: any = {
       title: payload.title,
       body: payload.body,
       icon: payload.icon || '/favicon.ico',
@@ -158,6 +190,14 @@ export class NotificationService {
       tag: payload.tag || `notification-${Date.now()}`,
       data: payload.data,
     };
+
+    if (payload.image) notificationPayload.image = payload.image;
+    if (payload.vibrate) notificationPayload.vibrate = payload.vibrate;
+    if (payload.requireInteraction !== undefined) notificationPayload.requireInteraction = payload.requireInteraction;
+    if (payload.silent !== undefined) notificationPayload.silent = payload.silent;
+    if (payload.dir) notificationPayload.dir = payload.dir;
+    if (payload.lang) notificationPayload.lang = payload.lang;
+    if (payload.timestamp) notificationPayload.timestamp = payload.timestamp;
 
     try {
       await webpush.sendNotification(
@@ -223,10 +263,15 @@ export class NotificationService {
       }
 
       const payload: NotificationPayload = {
-        title: `New message from ${sender.username}`,
+        title: sender.username,
         body: messageContent.length > 100 ? `${messageContent.substring(0, 100)}...` : messageContent,
-        icon: sender.avatarUrl || '/favicon.ico',
+        icon: ' https://png.pngtree.com/element_our/sm/20180626/sm_5b321c99945a2.jpg',
+        badge: 'https://png.pngtree.com/element_our/sm/20180626/sm_5b321c99945a2.jpg',
         tag: `message-${chatId}`,
+        vibrate: [100, 50, 100, 50, 200],
+        silent: false,
+        requireInteraction: false,
+        timestamp: Date.now(),
         data: {
           chatId,
           senderId,

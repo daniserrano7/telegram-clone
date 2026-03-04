@@ -35,12 +35,13 @@ const AccentSchema = z.enum([
   'orange',
 ]);
 
+const FontSizeSchema = z.enum(['small', 'medium', 'large', 'extra-large']);
+
 const ThemeSettingsSchema = z.object({
   theme: ThemeSchema,
   accent: AccentSchema,
+  fontSize: FontSizeSchema.optional(),
 });
-
-const FontSizeSchema = z.enum(['small', 'medium', 'large']);
 
 const FontSizeSettingsSchema = z.object({
   fontSize: FontSizeSchema,

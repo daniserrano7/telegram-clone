@@ -64,8 +64,8 @@ export class NotificationController {
   @HttpCode(HttpStatus.OK)
   async sendTestNotification(@Request() req: any) {
     const userId = req.user.id;
-    
-    await this.notificationService.sendNotificationToUser(userId, {
+
+    const result = await this.notificationService.sendNotificationToUser(userId, {
       title: 'Test Notification',
       body: 'This is a test notification from your Telegram Clone app!',
       icon: '/favicon.ico',
@@ -75,10 +75,27 @@ export class NotificationController {
         timestamp: Date.now(),
       },
     });
-    
+
+    if (result.total === 0) {
+      return {
+        status: 'error',
+        message: 'No push subscriptions found. Please enable notifications first.',
+        data: result,
+      };
+    }
+
+    if (result.sent === 0) {
+      return {
+        status: 'error',
+        message: `Failed to send notification. ${result.failed} subscription(s) failed.`,
+        data: result,
+      };
+    }
+
     return {
       status: 'success',
-      message: 'Test notification sent successfully',
+      message: `Test notification sent successfully to ${result.sent} device(s).`,
+      data: result,
     };
   }
 }

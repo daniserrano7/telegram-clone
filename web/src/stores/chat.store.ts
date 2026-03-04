@@ -1,7 +1,18 @@
 import { create } from 'zustand';
-import { CreateChatRequestDto, Message } from '@shared/chat.dto';
+import {
+  CreateChatRequestDto,
+  Message,
+  CreateGroupRequestDto,
+  ChatMembership,
+  Chat as ChatDto,
+} from '@shared/chat.dto';
 import { User } from '@shared/user.dto';
-import { Events, UserStatus } from '@shared/gateway.dto';
+import {
+  Events,
+  UserStatus,
+  ChatType,
+  ChatMemberRole,
+} from '@shared/gateway.dto';
 import { apiService } from '../services/api.service';
 import { socketService } from '../services/socket.service';
 import { networkService } from '../services/network.service';
@@ -16,11 +27,17 @@ import {
 
 interface Chat {
   id: number;
+  type: ChatType;
+  name: string | null;
+  description: string | null;
+  avatarUrl: string | null;
+  createdBy: number | null;
   members: User[];
+  memberships: ChatMembership[];
   messages: LocalMessage[];
 }
 
-// Same tipe as Chat but with the id optional
+// Same type as Chat but with the id optional (for new chats)
 type ActiveChat = Omit<Chat, 'id'> & { id?: number };
 
 interface ChatStore {
@@ -34,10 +51,14 @@ interface ChatStore {
   activeChat: ActiveChat | null;
   fetchChat: (chatId: number) => void;
   createChat: (chat: CreateChatRequestDto) => Promise<{ chatId?: number }>;
+  createGroup: (data: CreateGroupRequestDto) => Promise<{ chatId?: number }>;
   sendMessage: (chatId: number, content: string) => void;
   setActiveChat: (chat: ActiveChat | null) => void;
   openChatWithUser: (userId: number) => Promise<{ chatId?: number }>;
   getChatPartner: (chat: ActiveChat) => User | undefined;
+  getChatName: (chat: ActiveChat) => string;
+  getChatAvatar: (chat: ActiveChat) => { username?: string; src?: string | null };
+  isUserAdmin: (chat: ActiveChat, userId: number) => boolean;
   getActiveChatFromUrl: (chatId?: string) => ActiveChat | null;
   registerEvents: (user: User) => void;
   replacePendingWithConfirmed: (clientMessageId: string, message: Message) => void;
@@ -45,6 +66,14 @@ interface ChatStore {
   retryMessage: (clientMessageId: string) => void;
   cancelMessage: (clientMessageId: string) => void;
 }
+
+const convertToLocalChat = (chat: ChatDto): Chat => ({
+  ...chat,
+  messages: (chat.messages || []).map((msg) => ({
+    ...msg,
+    clientMessageId: `server_${msg.id}`,
+  })) as LocalMessage[],
+});
 
 export const useChatStore = create<ChatStore>((set, get) => ({
   init: async (user: User) => {
@@ -91,14 +120,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       });
 
       const chats = chatsResult.data;
-      // Convert server messages to LocalMessages
-      const localChats = chats.map((chat) => ({
-        ...chat,
-        messages: chat.messages.map((msg) => ({
-          ...msg,
-          clientMessageId: `server_${msg.id}`,
-        })) as LocalMessage[],
-      }));
+      const localChats = chats.map(convertToLocalChat);
       set({ chats: localChats });
 
       chats.forEach((chat) => {
@@ -145,14 +167,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       }
 
       const chat = result.data;
-      // Convert server messages to LocalMessages
-      const localChat: Chat = {
-        ...chat,
-        messages: chat.messages.map((msg) => ({
-          ...msg,
-          clientMessageId: `server_${msg.id}`,
-        })) as LocalMessage[],
-      };
+      const localChat = convertToLocalChat(chat);
       const chatAlreadyExists = get().chats.some((c) => c.id === localChat.id);
       const newChats = chatAlreadyExists
         ? get().chats.map((c) => (c.id === localChat.id ? localChat : c))
@@ -189,14 +204,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       }
 
       const { data: chat } = result;
-      // Convert server messages to LocalMessages
-      const localChat: Chat = {
-        ...chat,
-        messages: (chat.messages || []).map((msg) => ({
-          ...msg,
-          clientMessageId: `server_${msg.id}`,
-        })) as LocalMessage[],
-      };
+      const localChat = convertToLocalChat(chat);
       set({ chats: [...get().chats, localChat] });
 
       // Join the newly created chat room to receive messages
@@ -210,6 +218,42 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       return { chatId: chat.id };
     } catch (error) {
       console.error('Failed to create chat', error);
+      const msg =
+        error instanceof Error ? error.message : 'An unknown error occurred';
+      set({ errorMsg: msg });
+      return { chatId: undefined };
+    }
+  },
+  createGroup: async (data: CreateGroupRequestDto) => {
+    try {
+      const userId = useAuthStore.getState().user?.id;
+
+      if (!userId) {
+        set({ errorMsg: 'User not logged in' });
+        return { chatId: undefined };
+      }
+
+      set({ errorMsg: '' });
+
+      const result = await apiService.createGroup(data);
+
+      if (result.status === 'error') {
+        set({ errorMsg: result.errorMsg || 'Failed to create group' });
+        return { chatId: undefined };
+      }
+
+      const { data: chat } = result;
+      const localChat = convertToLocalChat(chat);
+      set({ chats: [...get().chats, localChat] });
+
+      // Join the newly created chat room
+      socketService.emit(Events.JOIN_CHAT, { chatId: chat.id });
+
+      set({ activeChat: localChat });
+
+      return { chatId: chat.id };
+    } catch (error) {
+      console.error('Failed to create group', error);
       const msg =
         error instanceof Error ? error.message : 'An unknown error occurred';
       set({ errorMsg: msg });
@@ -233,6 +277,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     const optimisticMessage: LocalMessage = {
       id: tempId,
       content,
+      type: 'USER',
       chatId,
       senderId: userId,
       status: 'PENDING',
@@ -242,6 +287,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     };
 
     // Add to UI immediately
+    const currentActiveChat = get().activeChat;
     set({
       chats: get().chats.map((chat) => {
         if (chat.id === chatId) {
@@ -253,20 +299,21 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         return chat;
       }),
       activeChat:
-        get().activeChat?.id === chatId
+        currentActiveChat?.id === chatId && currentActiveChat
           ? {
-              ...get().activeChat,
-              members: get().activeChat?.members || [],
-              messages: [...(get().activeChat?.messages || []), optimisticMessage],
+              ...currentActiveChat,
+              messages: [...currentActiveChat.messages, optimisticMessage],
             }
-          : get().activeChat,
+          : currentActiveChat,
     });
   },
   setActiveChat: (chat: ActiveChat | null) => set({ activeChat: chat }),
   openChatWithUser: async (userId: number) => {
     try {
+      // Only search in DIRECT chats
       const foundChat = get().chats.find(
         (chat) =>
+          chat.type === 'DIRECT' &&
           chat.members.length === 2 &&
           chat.members.some((member) => member.id === userId)
       );
@@ -292,10 +339,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       }
 
       get().setActiveChat({
+        type: 'DIRECT',
+        name: null,
+        description: null,
+        avatarUrl: null,
+        createdBy: null,
         members: [ownUser, user],
+        memberships: [],
         messages: [],
       });
-      
+
       return { chatId: undefined }; // No chatId yet for new chats
     } catch (error) {
       console.error('Failed to open chat with user', error);
@@ -306,15 +359,41 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }
   },
   getChatPartner: (chat: ActiveChat) => {
+    if (chat.type === 'GROUP') return undefined;
     const userId = useAuthStore.getState().user?.id;
     return chat.members.find((member) => member.id !== userId);
   },
+  getChatName: (chat: ActiveChat) => {
+    if (chat.type === 'GROUP') {
+      return chat.name || 'Unnamed Group';
+    }
+    const partner = get().getChatPartner(chat);
+    return partner?.username || 'Unknown User';
+  },
+  getChatAvatar: (chat: ActiveChat) => {
+    if (chat.type === 'GROUP') {
+      return {
+        username: chat.name || 'Group',
+        src: chat.avatarUrl,
+      };
+    }
+    const partner = get().getChatPartner(chat);
+    return {
+      username: partner?.username,
+      src: partner?.avatarUrl,
+    };
+  },
+  isUserAdmin: (chat: ActiveChat, userId: number) => {
+    if (chat.type === 'DIRECT') return false;
+    const membership = chat.memberships?.find((m) => m.userId === userId);
+    return membership?.role === 'ADMIN';
+  },
   getActiveChatFromUrl: (chatId?: string) => {
     if (!chatId) return null;
-    
+
     const chatIdNum = parseInt(chatId, 10);
     if (isNaN(chatIdNum)) return null;
-    
+
     return get().chats.find((chat) => chat.id === chatIdNum) || null;
   },
   registerEvents: (user: User) => {
@@ -328,6 +407,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         messageId: number;
         status: Message['status'];
       }) => {
+        const currentActiveChat = get().activeChat;
         set({
           chats: get().chats.map((chat) => ({
             ...chat,
@@ -335,14 +415,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
               msg.id === messageId ? { ...msg, status } : msg
             ),
           })),
-          activeChat: get().activeChat
+          activeChat: currentActiveChat
             ? {
-                ...get().activeChat,
-                members: get().activeChat?.members || [],
-                messages:
-                  get().activeChat?.messages.map((msg) =>
-                    msg.id === messageId ? { ...msg, status } : msg
-                  ) || [],
+                ...currentActiveChat,
+                messages: currentActiveChat.messages.map((msg) =>
+                  msg.id === messageId ? { ...msg, status } : msg
+                ),
               }
             : null,
         });
@@ -352,7 +430,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     // Listen for new chats
     socketService.on(Events.NEW_CHAT, (chatId: number) => {
       get().fetchChat(chatId);
-      socketService.emit(Events.JOIN_CHAT, chatId);
+      socketService.emit(Events.JOIN_CHAT, { chatId });
     });
 
     // Listen for incoming messages
@@ -366,6 +444,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       };
 
       // Update chats with new message
+      const currentActiveChat = get().activeChat;
       set({
         chats: get().chats.map((chat) => {
           if (chat.id === message.chatId) {
@@ -377,17 +456,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           return chat;
         }),
         activeChat:
-          get().activeChat?.id === message.chatId
+          currentActiveChat?.id === message.chatId && currentActiveChat
             ? {
-                id: get().activeChat?.id,
-                members: get().activeChat?.members || [],
-                messages: [...(get().activeChat?.messages || []), localMessage],
+                ...currentActiveChat,
+                messages: [...currentActiveChat.messages, localMessage],
               }
-            : get().activeChat,
+            : currentActiveChat,
       });
 
-      // Automatically emit DELIVERED status for received messages
-      socketService.emit(Events.MESSAGE_DELIVERED, { messageId: message.id });
+      // Automatically emit DELIVERED status for received messages (only for USER messages)
+      if (message.type === 'USER') {
+        socketService.emit(Events.MESSAGE_DELIVERED, { messageId: message.id });
+      }
     });
 
     // Listen for user status changes
@@ -421,7 +501,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       useContactsStore.getState().updateTypingStatus(userId, chatId, isTyping);
     });
 
-    // Handle heartbeat (additional safety although service already does)
+    // Handle heartbeat
     socketService.on(Events.HEARTBEAT, () => {
       socketService.emit(Events.HEARTBEAT_RESPONSE);
     });
@@ -430,6 +510,114 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     socketService.on(Events.CONNECTION_VERIFY, () => {
       console.log('Received connection verification request from server');
       socketService.emit(Events.CONNECTION_VERIFY_RESPONSE);
+    });
+
+    // ==================== GROUP EVENT HANDLERS ====================
+
+    // Listen for group updates
+    socketService.on(Events.GROUP_UPDATED, (updatedChat: ChatDto) => {
+      const localChat = convertToLocalChat(updatedChat);
+      set({
+        chats: get().chats.map((c) =>
+          c.id === localChat.id ? { ...c, ...localChat } : c
+        ),
+        activeChat:
+          get().activeChat?.id === localChat.id
+            ? { ...get().activeChat, ...localChat }
+            : get().activeChat,
+      });
+    });
+
+    // Listen for member added
+    socketService.on(
+      Events.MEMBER_ADDED,
+      ({ chatId }: { chatId: number; userIds: number[] }) => {
+        // Refetch chat to get updated member list
+        get().fetchChat(chatId);
+      }
+    );
+
+    // Listen for member removed
+    socketService.on(
+      Events.MEMBER_REMOVED,
+      ({ chatId, userId, wasRemoved }: { chatId: number; userId: number; wasRemoved?: boolean }) => {
+        const currentUserId = useAuthStore.getState().user?.id;
+
+        if (userId === currentUserId || wasRemoved) {
+          // Current user was removed - leave the chat room immediately
+          socketService.emit(Events.LEAVE_CHAT, { chatId });
+
+          // Remove chat from list
+          set({
+            chats: get().chats.filter((c) => c.id !== chatId),
+            activeChat:
+              get().activeChat?.id === chatId ? null : get().activeChat,
+          });
+        } else {
+          // Someone else was removed - refetch chat
+          get().fetchChat(chatId);
+        }
+      }
+    );
+
+    // Listen for member left
+    socketService.on(
+      Events.MEMBER_LEFT,
+      ({ chatId, userId }: { chatId: number; userId: number }) => {
+        const currentUserId = useAuthStore.getState().user?.id;
+
+        if (userId === currentUserId) {
+          // Current user left - leave the chat room immediately
+          socketService.emit(Events.LEAVE_CHAT, { chatId });
+
+          // Remove chat from list
+          set({
+            chats: get().chats.filter((c) => c.id !== chatId),
+            activeChat:
+              get().activeChat?.id === chatId ? null : get().activeChat,
+          });
+        } else {
+          // Someone else left - refetch chat to update member list
+          get().fetchChat(chatId);
+        }
+      }
+    );
+
+    // Listen for member role changed
+    socketService.on(
+      Events.MEMBER_ROLE_CHANGED,
+      ({ chatId }: { chatId: number; userId: number; role: ChatMemberRole }) => {
+        // Refetch chat to update memberships
+        get().fetchChat(chatId);
+      }
+    );
+
+    // Listen for system messages
+    socketService.on(Events.SYSTEM_MESSAGE, (message: Message) => {
+      const localMessage: LocalMessage = {
+        ...message,
+        clientMessageId: `server_${message.id}`,
+      };
+
+      const currentActiveChat = get().activeChat;
+      set({
+        chats: get().chats.map((chat) => {
+          if (chat.id === message.chatId) {
+            return {
+              ...chat,
+              messages: [...chat.messages, localMessage],
+            };
+          }
+          return chat;
+        }),
+        activeChat:
+          currentActiveChat?.id === message.chatId && currentActiveChat
+            ? {
+                ...currentActiveChat,
+                messages: [...currentActiveChat.messages, localMessage],
+              }
+            : currentActiveChat,
+      });
     });
   },
   replacePendingWithConfirmed: (clientMessageId: string, message: Message) => {
@@ -440,6 +628,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     };
 
     // Replace the pending message with the confirmed one
+    const currentActiveChat = get().activeChat;
     set({
       chats: get().chats.map((chat) => {
         if (chat.id === message.chatId) {
@@ -453,18 +642,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         return chat;
       }),
       activeChat:
-        get().activeChat?.id === message.chatId
+        currentActiveChat?.id === message.chatId && currentActiveChat
           ? {
-              ...get().activeChat,
-              members: get().activeChat?.members || [],
-              messages: (get().activeChat?.messages || []).map((msg) =>
+              ...currentActiveChat,
+              messages: currentActiveChat.messages.map((msg) =>
                 msg.clientMessageId === clientMessageId ? confirmedMessage : msg
               ),
             }
-          : get().activeChat,
+          : currentActiveChat,
     });
   },
   updatePendingMessageStatus: (clientMessageId: string, status: LocalMessageStatus) => {
+    const currentActiveChat = get().activeChat;
     set({
       chats: get().chats.map((chat) => ({
         ...chat,
@@ -472,11 +661,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           msg.clientMessageId === clientMessageId ? { ...msg, status } : msg
         ),
       })),
-      activeChat: get().activeChat
+      activeChat: currentActiveChat
         ? {
-            ...get().activeChat,
-            members: get().activeChat?.members || [],
-            messages: (get().activeChat?.messages || []).map((msg) =>
+            ...currentActiveChat,
+            messages: currentActiveChat.messages.map((msg) =>
               msg.clientMessageId === clientMessageId ? { ...msg, status } : msg
             ),
           }
@@ -494,6 +682,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     await syncService.cancelPendingMessage(clientMessageId);
 
     // Remove from UI
+    const currentActiveChat = get().activeChat;
     set({
       chats: get().chats.map((chat) => ({
         ...chat,
@@ -501,11 +690,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           (msg) => msg.clientMessageId !== clientMessageId
         ),
       })),
-      activeChat: get().activeChat
+      activeChat: currentActiveChat
         ? {
-            ...get().activeChat,
-            members: get().activeChat?.members || [],
-            messages: (get().activeChat?.messages || []).filter(
+            ...currentActiveChat,
+            messages: currentActiveChat.messages.filter(
               (msg) => msg.clientMessageId !== clientMessageId
             ),
           }
