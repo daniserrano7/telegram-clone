@@ -5,6 +5,7 @@ import { HomePage } from './pages/home.page';
 import { LoginPage } from './pages/login.page';
 import { RegisterPage } from './pages/register.page';
 import { ChatsPage } from './pages/chats.page';
+import { AboutPage } from './pages/about.page';
 import { App } from './App';
 import { ProtectedRoute } from './router/protected-route';
 import './index.css';
@@ -18,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <Routes>
           <Route index path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route
