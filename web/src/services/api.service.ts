@@ -399,7 +399,6 @@ export class ApiService {
       return { status: 'success', data: response.data };
     } catch (error) {
       console.error('Failed to update group avatar:', error);
-      console.error('Error details:', error.response?.data || error.message);
       return { status: 'error', error };
     }
   }
