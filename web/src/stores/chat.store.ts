@@ -501,17 +501,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       useContactsStore.getState().updateTypingStatus(userId, chatId, isTyping);
     });
 
-    // Handle heartbeat
-    socketService.on(Events.HEARTBEAT, () => {
-      socketService.emit(Events.HEARTBEAT_RESPONSE);
-    });
-
-    // Handle connection verification
-    socketService.on(Events.CONNECTION_VERIFY, () => {
-      console.log('Received connection verification request from server');
-      socketService.emit(Events.CONNECTION_VERIFY_RESPONSE);
-    });
-
     // ==================== GROUP EVENT HANDLERS ====================
 
     // Listen for group updates

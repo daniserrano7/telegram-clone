@@ -16,7 +16,7 @@ export class UserStatusService implements OnModuleInit {
   private readonly onlineUsers = new Map<number, UserConnection>();
   private server: Server;
   // Define constants for timing values
-  private readonly STALE_CONNECTION_THRESHOLD = 30000; // 30 seconds
+  private readonly STALE_CONNECTION_THRESHOLD = 150000; // 2.5 minutes
   private readonly VERIFICATION_INTERVAL = 300000; // 5 minutes
 
   constructor(private readonly db: DbService) {}
@@ -109,7 +109,8 @@ export class UserStatusService implements OnModuleInit {
   }
 
   /**
-   * Check for stale connections (no heartbeat for more than 30 seconds)
+   * Check for stale connections.
+   * The threshold must stay comfortably above the gateway heartbeat interval.
    * Runs every 30 seconds via cron job in the gateway
    */
   checkStaleConnections() {

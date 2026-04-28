@@ -31,9 +31,14 @@ class SocketService {
       this.notifyConnectionListeners(false);
     });
 
-    // Heartbeat handling – keeps the connection alive and verified
+    // App-level heartbeat used as a keepalive in addition to Socket.IO's
+    // built-in Engine.IO ping/pong.
     this.on(Events.HEARTBEAT, () => {
       this.emit(Events.HEARTBEAT_RESPONSE);
+    });
+
+    this.on(Events.CONNECTION_VERIFY, () => {
+      this.emit(Events.CONNECTION_VERIFY_RESPONSE);
     });
   }
 
