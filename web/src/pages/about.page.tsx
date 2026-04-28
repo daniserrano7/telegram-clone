@@ -1,581 +1,564 @@
 import { Link } from 'react-router-dom';
-import { Logo } from 'src/components/logo';
+import type { IconType } from 'react-icons';
+import {
+  HiOutlineArrowLeft,
+  HiOutlineArrowPath,
+  HiOutlineBellAlert,
+  HiOutlineBolt,
+  HiOutlineChatBubbleLeftRight,
+  HiOutlineCheckCircle,
+  HiOutlineCircleStack,
+  HiOutlineCloudArrowUp,
+  HiOutlineCodeBracketSquare,
+  HiOutlineCommandLine,
+  HiOutlineCpuChip,
+  HiOutlineServerStack,
+  HiOutlineShieldCheck,
+  HiOutlineSquares2X2,
+  HiOutlineWrenchScrewdriver,
+} from 'react-icons/hi2';
 
-const techStack = {
-  backend: [
-    {
-      name: 'NestJS',
-      description:
-        'Modular, decorator-based Node.js framework with dependency injection',
-      icon: '🏗️',
-      color: 'text-red-400',
-    },
-    {
-      name: 'PostgreSQL',
-      description:
-        'Relational database for structured, persistent data storage',
-      icon: '🐘',
-      color: 'text-blue-400',
-    },
-    {
-      name: 'Prisma ORM',
-      description: 'Type-safe database client with auto-generated migrations',
-      icon: '🔷',
-      color: 'text-indigo-400',
-    },
-    {
-      name: 'Socket.io',
-      description: 'Bidirectional WebSocket communication for real-time events',
-      icon: '⚡',
-      color: 'text-yellow-400',
-    },
-    {
-      name: 'JWT + bcrypt',
-      description: 'Stateless authentication with hashed passwords',
-      icon: '🔐',
-      color: 'text-green-400',
-    },
-    {
-      name: 'Web Push API',
-      description: 'VAPID-based push notifications via Service Worker',
-      icon: '🔔',
-      color: 'text-purple-400',
-    },
-  ],
-  frontend: [
-    {
-      name: 'React 18',
-      description: 'Component-driven UI with hooks and concurrent features',
-      icon: '⚛️',
-      color: 'text-cyan-400',
-    },
-    {
-      name: 'TypeScript',
-      description: 'End-to-end type safety across frontend and backend',
-      icon: '🔵',
-      color: 'text-blue-400',
-    },
-    {
-      name: 'Vite',
-      description: 'Lightning-fast dev server and optimized production builds',
-      icon: '⚡',
-      color: 'text-yellow-400',
-    },
-    {
-      name: 'Tailwind CSS',
-      description:
-        'Utility-first styling with CSS variables for dynamic theming',
-      icon: '🎨',
-      color: 'text-teal-400',
-    },
-    {
-      name: 'Zustand',
-      description: 'Lightweight, reactive state management without boilerplate',
-      icon: '🐻',
-      color: 'text-orange-400',
-    },
-    {
-      name: 'Dexie (IndexedDB)',
-      description: 'Client-side database for offline message caching and sync',
-      icon: '💾',
-      color: 'text-green-400',
-    },
-  ],
-};
-
-const features = [
+const productNotes = [
   {
-    icon: '💬',
-    title: 'Real-time Messaging',
-    description:
-      'Messages delivered instantly via WebSocket. Status tracking (sent → delivered → read) with typing indicators and online presence.',
+    label: 'Realtime core',
+    value: 'Socket gateway, presence, typing state, read receipts',
   },
   {
-    icon: '👥',
-    title: 'Group Chats',
-    description:
-      'Create groups with custom avatars, manage members, assign admin roles, and coordinate conversations at scale.',
+    label: 'Data model',
+    value: 'PostgreSQL schema with direct chats, groups, memberships',
   },
   {
-    icon: '🔔',
-    title: 'Push Notifications',
-    description:
-      'Background notifications via Web Push API and Service Worker, even when the app is closed or in another tab.',
-  },
-  {
-    icon: '📡',
-    title: 'Offline Sync',
-    description:
-      'Messages cached locally in IndexedDB. Missed messages sync automatically when the connection is restored.',
-  },
-  {
-    icon: '🎨',
-    title: 'Theme Customization',
-    description:
-      'Light and dark modes with 6 accent colors. Customizable chat backgrounds and font sizes — all persisted locally.',
-  },
-  {
-    icon: '🔒',
-    title: 'User Management',
-    description:
-      'Secure registration and login, editable profiles with avatars, user blocking, and contact management.',
+    label: 'Client runtime',
+    value: 'React state, IndexedDB cache, push notification support',
   },
 ];
 
-const architecture = [
+const capabilities: Capability[] = [
   {
-    label: 'pnpm Monorepo',
-    detail: 'server · web · shared',
+    icon: HiOutlineChatBubbleLeftRight,
+    title: 'Messaging that behaves like a real app',
     description:
-      'A single repository for the API, React app, and shared TypeScript types — enabling full type safety across the stack without duplication.',
+      'Direct and group conversations, delivery states, typing indicators, online presence, and ordered message history all share the same event model.',
   },
   {
-    label: 'Modular NestJS',
-    detail: 'Auth · Chat · User · Notification · Upload',
+    icon: HiOutlineBellAlert,
+    title: 'Notifications beyond the active tab',
     description:
-      'Each domain is an isolated NestJS module with its own controller, service, and gateway — clean separation of concerns from day one.',
+      'The service worker and Web Push flow keep conversations reachable when the app is closed, while the backend filters recipients server-side.',
   },
   {
-    label: 'Event-driven Gateway',
-    detail: 'WebSocket events via Socket.io',
+    icon: HiOutlineArrowPath,
+    title: 'Offline-friendly client state',
     description:
-      'A dedicated NestJS WebSocket gateway handles real-time events: message delivery, read receipts, typing indicators, and online status.',
+      'Local IndexedDB storage keeps recent chat data available and gives the sync layer a place to reconcile missed messages after reconnecting.',
   },
   {
-    label: 'Shared Type Contracts',
-    detail: 'DTOs consumed by both ends',
+    icon: HiOutlineShieldCheck,
+    title: 'Account and safety basics',
     description:
-      'API request/response shapes and WebSocket event payloads are defined once in the shared package, consumed by both server and client.',
+      'JWT sessions, bcrypt password hashes, profile editing, avatars, contacts, and blocking cover the expected surface of a private chat product.',
   },
+];
+
+const systemLayers: SystemLayer[] = [
+  {
+    eyebrow: 'API',
+    title: 'NestJS modules',
+    description:
+      'Auth, users, chats, uploads, and notifications are separated into focused modules with controllers and services at clear boundaries.',
+    points: ['DTO-driven routes', 'Prisma-backed services', 'JWT guard'],
+  },
+  {
+    eyebrow: 'Realtime',
+    title: 'Socket.io gateway',
+    description:
+      'A dedicated gateway owns rooms, user sockets, message events, read receipts, typing state, and online status transitions.',
+    points: ['Per-user rooms', 'Chat broadcasts', 'Presence updates'],
+  },
+  {
+    eyebrow: 'Client',
+    title: 'React workspace',
+    description:
+      'The frontend uses a focused store layer around auth, chats, blocking, settings, local persistence, and socket lifecycle.',
+    points: ['Zustand stores', 'Dexie cache', 'Theme variables'],
+  },
+];
+
+const stackGroups: StackGroup[] = [
+  {
+    title: 'Backend',
+    items: ['NestJS', 'PostgreSQL', 'Prisma', 'Socket.io', 'JWT', 'bcrypt'],
+  },
+  {
+    title: 'Frontend',
+    items: ['React', 'TypeScript', 'Vite', 'Tailwind CSS', 'Zustand', 'Dexie'],
+  },
+  {
+    title: 'Operations',
+    items: [
+      'pnpm',
+      'GitHub Actions',
+      'PM2',
+      'Nginx',
+      'VPS',
+      'Postgres migrations',
+    ],
+  },
+];
+
+const deliveryFlow = [
+  'Install',
+  'Typecheck',
+  'Test',
+  'Build',
+  'Migrate',
+  'Restart',
 ];
 
 export const AboutPage = () => {
   return (
-    <main className="w-full h-full bg-background-primary overflow-y-auto">
-      {/* Nav */}
-      <nav className="sticky top-0 z-10 bg-background-primary/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+    <main className="h-full w-full overflow-y-auto bg-background-primary text-font dark:bg-[#0b1118] dark:text-[#eaf2f8]">
+      <nav className="sticky top-0 z-20 border-b border-border bg-background-primary/90 backdrop-blur-xl dark:bg-[#0b1118]/90">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link
             to="/"
-            className="flex items-center gap-2 text-font-subtle hover:text-font transition-colors text-sm"
+            className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium text-font-subtle transition-colors hover:text-font dark:text-[#a7b6c6] dark:hover:text-white"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
+            <HiOutlineArrowLeft className="size-4" />
             Back
           </Link>
+
           <a
             href="https://github.com/daniserrano7/telegram-clone"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-font-subtle hover:text-font transition-colors text-sm"
+            className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium text-font-subtle transition-colors hover:text-font dark:text-[#a7b6c6] dark:hover:text-white"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.835 2.807 1.305 3.492.998.108-.775.418-1.305.762-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23A11.5 11.5 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.29-1.552 3.297-1.23 3.297-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.807 5.625-5.48 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .319.216.694.825.576C20.565 21.795 24 17.298 24 12c0-6.63-5.37-12-12-12z" />
-            </svg>
-            GitHub
+            <HiOutlineCodeBracketSquare className="size-4" />
+            Source
           </a>
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-20">
-        {/* Hero */}
-        <section className="pt-16 pb-12 text-center">
-          <div className="flex justify-center mb-6">
-            <Logo size="large" />
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-font mb-4 leading-tight">
-            Telechat
-          </h1>
-          <p className="text-lg text-font-subtle max-w-2xl mx-auto leading-relaxed">
-            A full-stack real-time messaging app built to showcase backend
-            engineering skills — modular architecture, WebSocket communication,
-            push notifications, and production-grade tooling.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            {[
-              'NestJS',
-              'PostgreSQL',
-              'Socket.io',
-              'React',
-              'TypeScript',
-              'Prisma',
-            ].map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 rounded-full bg-elevation text-font-subtle text-sm border border-border"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        {/* Features */}
-        <section className="mb-16">
-          <SectionHeader
-            label="Features"
-            title="What's implemented"
-            subtitle="A production-like feature set covering the core of a modern messaging experience."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {features.map((f) => (
-              <div
-                key={f.title}
-                className="p-5 rounded-2xl bg-elevation-contrast border border-border/50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-              >
-                <div className="text-3xl mb-3">{f.icon}</div>
-                <h4 className="text-font font-semibold mb-2">{f.title}</h4>
-                <p className="text-font-subtle text-sm leading-relaxed">
-                  {f.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Architecture */}
-        <section className="mb-16">
-          <SectionHeader
-            label="Architecture"
-            title="Designed for maintainability"
-            subtitle="A monorepo structure that keeps the backend, frontend, and shared contracts in sync."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {architecture.map((item) => (
-              <div
-                key={item.label}
-                className="p-5 rounded-2xl bg-elevation-contrast border border-border/50 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="mb-2">
-                  <span className="text-font font-semibold text-sm">
-                    {item.label}
-                  </span>
-                  <span className="ml-2 text-xs text-font-primary font-mono bg-primary/10 px-2 py-0.5 rounded-full">
-                    {item.detail}
-                  </span>
-                </div>
-                <p className="text-font-subtle text-sm leading-relaxed">
-                  {item.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Tech Stack */}
-        <section className="mb-16">
-          <SectionHeader
-            label="Tech Stack"
-            title="The right tool for each layer"
-            subtitle="Carefully chosen technologies that follow industry best practices and real-world patterns."
-          />
-
-          {/* Backend */}
-          <div className="mb-8">
-            <h3 className="text-font font-semibold text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary inline-block" />
-              Backend
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {techStack.backend.map((tech) => (
-                <TechCard key={tech.name} {...tech} />
-              ))}
-            </div>
-          </div>
-
-          {/* Frontend */}
+      <section className="border-b border-border bg-[linear-gradient(180deg,rgba(36,129,204,0.10),transparent_72%)] dark:bg-[radial-gradient(circle_at_78%_18%,rgba(36,129,204,0.22),transparent_34%),linear-gradient(180deg,#0f1823_0%,#0b1118_76%)]">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
-            <h3 className="text-font font-semibold text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary inline-block" />
-              Frontend
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {techStack.frontend.map((tech) => (
-                <TechCard key={tech.name} {...tech} />
-              ))}
+            <div className="mb-6 inline-flex items-center gap-2 rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-font-primary dark:bg-[#12314a] dark:text-[#8fd0ff]">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              Engineering case study
             </div>
-          </div>
-        </section>
 
-        {/* CI/CD & Deployment */}
-        <section className="mb-16">
-          <SectionHeader
-            label="CI/CD & Deployment"
-            title="Fully automated, production-ready pipeline"
-            subtitle="Every push triggers a GitHub Actions workflow that builds, tests, and deploys the app to a VPS — zero manual steps."
-          />
+            <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-font dark:text-[#f5f9fc] sm:text-5xl">
+              Telechat is a full-stack messaging system built around realtime
+              product behavior.
+            </h1>
 
-          {/* Pipeline flow */}
-          <div className="mb-6 p-5 rounded-2xl bg-elevation-contrast border border-border/50 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-widest text-font-primary mb-4">
-              Pipeline on every push
+            <p className="mt-5 max-w-2xl text-base leading-7 text-font-subtle dark:text-[#b3c1ce] sm:text-lg">
+              The project connects a modular NestJS API, a typed React client,
+              PostgreSQL persistence, WebSocket events, offline caching, and
+              push notifications into one coherent chat experience.
             </p>
-            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 text-sm">
-              {[
-                { icon: '📦', label: 'Install deps' },
-                { icon: '🧪', label: 'Run tests' },
-                { icon: '🔨', label: 'Build' },
-                { icon: '🚀', label: 'Deploy to VPS' },
-                { icon: '🗄️', label: 'DB migrations' },
-              ].map((step, i, arr) => (
-                <div key={step.label} className="flex sm:flex-row flex-col items-center gap-2">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-elevation border border-border/30 w-full sm:w-auto">
-                    <span>{step.icon}</span>
-                    <span className="text-font font-medium text-xs">
-                      {step.label}
-                    </span>
-                  </div>
-                  {i < arr.length - 1 && (
-                    <svg
-                      className="w-4 h-4 text-font-subtle shrink-0 rotate-90 sm:rotate-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Two environments */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div className="p-5 rounded-2xl bg-elevation-contrast border border-border/50 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
-                <span className="text-font font-semibold text-sm">
-                  Development
-                </span>
-                <code className="ml-auto text-xs font-mono bg-elevation px-2 py-0.5 rounded text-font-subtle">
-                  develop
-                </code>
-              </div>
-              <p className="text-font-subtle text-sm leading-relaxed">
-                Deployed to a subdomain on every push to{' '}
-                <span className="font-mono text-xs text-font-primary">
-                  develop
-                </span>
-                . Password-protected at the Nginx level so the staging
-                environment stays private.
-              </p>
-            </div>
-            <div className="p-5 rounded-2xl bg-elevation-contrast border border-border/50 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
-                <span className="text-font font-semibold text-sm">
-                  Production
-                </span>
-                <code className="ml-auto text-xs font-mono bg-elevation px-2 py-0.5 rounded text-font-subtle">
-                  master
-                </code>
-              </div>
-              <p className="text-font-subtle text-sm leading-relaxed">
-                Deployed to the main domain on every push to{' '}
-                <span className="font-mono text-xs text-font-primary">
-                  master
-                </span>
-                . Publicly accessible with full SSL via Let's Encrypt.
-              </p>
-            </div>
-          </div>
-
-          {/* Infrastructure details */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                icon: '🖥️',
-                title: 'VPS hosting',
-                desc: 'Backend (NestJS), frontend (static files), and database all run on a single VPS.',
-              },
-              {
-                icon: '🔀',
-                title: 'Nginx reverse proxy',
-                desc: 'Routes traffic between the React frontend and the NestJS API, handling WebSocket upgrades.',
-              },
-              {
-                icon: '🔒',
-                title: 'SSL + custom domain',
-                desc: "TLS certificates provisioned automatically with Let's Encrypt. Custom domain with a dedicated subdomain for dev.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="flex gap-3 p-4 rounded-xl bg-elevation border border-border/30"
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                to="/register"
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-font-primary-contrast shadow-sm shadow-primary/20 transition-colors hover:bg-primary-dark dark:text-white dark:shadow-primary/30"
               >
-                <span className="text-2xl shrink-0 mt-0.5">{item.icon}</span>
-                <div>
-                  <div className="text-font font-semibold text-sm">
-                    {item.title}
-                  </div>
-                  <div className="text-font-subtle text-xs leading-relaxed mt-0.5">
-                    {item.desc}
-                  </div>
+                <HiOutlineBolt className="size-4" />
+                Open app
+              </Link>
+              <a
+                href="https://github.com/daniserrano7/telegram-clone"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-elevation-contrast px-4 text-sm font-semibold text-font transition-colors hover:bg-elevation dark:bg-[#111b26] dark:text-[#eaf2f8] dark:hover:bg-[#172433]"
+              >
+                <HiOutlineCommandLine className="size-4" />
+                View repository
+              </a>
+            </div>
+          </div>
+
+          <ProductPanel />
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+        <div className="grid gap-4 md:grid-cols-3">
+          {productNotes.map((note) => (
+            <div
+              key={note.label}
+              className="rounded-lg border border-border bg-elevation-contrast p-5 dark:bg-[#111b26]"
+            >
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-font-primary dark:text-[#8fd0ff]">
+                {note.label}
+              </div>
+              <p className="mt-2 text-sm leading-6 text-font-subtle dark:text-[#aab8c6]">
+                {note.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <SectionBand
+        eyebrow="Product surface"
+        title="A compact chat app with the features users expect"
+        description="The feature set is intentionally practical: each part exists because chat products need it in daily use, not because it looks good on a checklist."
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          {capabilities.map((item) => (
+            <CapabilityCard key={item.title} {...item} />
+          ))}
+        </div>
+      </SectionBand>
+
+      <SectionBand
+        eyebrow="Architecture"
+        title="Clear boundaries between API, realtime, and client state"
+        description="The implementation keeps domain logic close to its owning module while sharing request, response, and socket payload types across the workspace."
+        muted
+      >
+        <div className="grid gap-4 lg:grid-cols-3">
+          {systemLayers.map((layer) => (
+            <LayerCard key={layer.title} {...layer} />
+          ))}
+        </div>
+      </SectionBand>
+
+      <SectionBand
+        eyebrow="Stack"
+        title="A conventional stack, assembled with production constraints"
+        description="The choices are familiar on purpose: the interesting work is in how the pieces cooperate under authentication, delivery, persistence, and deployment."
+      >
+        <div className="grid gap-4 lg:grid-cols-3">
+          {stackGroups.map((group) => (
+            <StackBlock key={group.title} {...group} />
+          ))}
+        </div>
+      </SectionBand>
+
+      <SectionBand
+        eyebrow="Delivery"
+        title="Deployment is treated as part of the product"
+        description="The app is deployed from a pnpm monorepo to a VPS with Nginx, PM2, PostgreSQL, migrations, and static frontend hosting."
+        muted
+      >
+        <div className="rounded-lg border border-border bg-elevation-contrast p-5 dark:bg-[#111b26] sm:p-6">
+          <div className="grid gap-3 sm:grid-cols-6">
+            {deliveryFlow.map((step, index) => (
+              <div key={step} className="relative">
+                <div className="flex h-full min-h-20 flex-col justify-between rounded-md border border-border bg-background-primary p-4 dark:bg-[#0d1520]">
+                  <span className="text-xs font-mono text-font-subtle dark:text-[#8da0b4]">
+                    0{index + 1}
+                  </span>
+                  <span className="mt-4 text-sm font-semibold text-font dark:text-[#eaf2f8]">
+                    {step}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
-        </section>
 
-        {/* Testing */}
-        <section className="mb-8">
-          <SectionHeader
-            label="Testing"
-            title="Confidence at every layer"
-            subtitle="Unit and integration tests covering critical logic on both backend and frontend."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              {
-                icon: '⚙️',
-                title: 'Backend — Jest',
-                badge: 'NestJS',
-                points: [
-                  'Service-level unit tests with mocked Prisma client',
-                  'Auth, chat, and user module coverage',
-                  'DTOs and validation logic tested in isolation',
-                ],
-              },
-              {
-                icon: '🖥️',
-                title: 'Frontend — Vitest + Testing Library',
-                badge: 'React',
-                points: [
-                  'Component tests with @testing-library/react',
-                  'User interaction simulation with @testing-library/user-event',
-                  'Chat and message input components covered',
-                ],
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="p-5 rounded-2xl bg-elevation-contrast border border-border/50 shadow-sm"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">{item.icon}</span>
-                  <div>
-                    <div className="text-font font-semibold text-sm">
-                      {item.title}
-                    </div>
-                    <span className="text-xs text-font-primary font-mono bg-primary/10 px-2 py-0.5 rounded-full">
-                      {item.badge}
-                    </span>
-                  </div>
-                </div>
-                <ul className="space-y-2">
-                  {item.points.map((p) => (
-                    <li
-                      key={p}
-                      className="flex items-start gap-2 text-font-subtle text-sm"
-                    >
-                      <span className="text-icon-success mt-0.5 shrink-0">
-                        ✓
-                      </span>
-                      {p}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <DeliveryItem
+              icon={HiOutlineCloudArrowUp}
+              title="Automated release"
+              text="GitHub Actions installs dependencies, builds changed workspaces, applies migrations, and restarts the server process."
+            />
+            <DeliveryItem
+              icon={HiOutlineServerStack}
+              title="VPS runtime"
+              text="Nginx serves the React app and proxies HTTP plus WebSocket traffic to the NestJS service managed by PM2."
+            />
+            <DeliveryItem
+              icon={HiOutlineCircleStack}
+              title="Database continuity"
+              text="Prisma migrations keep PostgreSQL schema changes explicit and repeatable between local and production environments."
+            />
           </div>
-        </section>
+        </div>
+      </SectionBand>
 
-        {/* CTA */}
-        <section className="text-center">
-          <div className="inline-block p-px rounded-2xl bg-gradient-to-br from-primary/50 via-primary/20 to-transparent">
-            <div className="bg-elevation-contrast rounded-2xl px-8 py-10">
-              <h2 className="text-2xl font-bold text-font mb-2">
-                See it in action
-              </h2>
-              <p className="text-font-subtle mb-6 max-w-md mx-auto text-sm leading-relaxed">
-                Create an account, open the app in two different tabs, and watch
-                real-time messaging, typing indicators, and notifications work
-                together.
-              </p>
-              <div className="flex flex-wrap justify-center gap-3">
-                <Link
-                  to="/register"
-                  className="px-6 py-2.5 bg-primary text-font-primary-contrast rounded-xl font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
-                >
-                  Try the app
-                </Link>
-                <a
-                  href="https://github.com/daniserrano7/telegram-clone"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-2.5 bg-elevation text-font rounded-xl font-medium hover:bg-elevation-hover transition-colors"
-                >
-                  View source
-                </a>
-              </div>
-            </div>
+      <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-6">
+        <div className="flex flex-col gap-5 rounded-lg border border-primary bg-[linear-gradient(135deg,rgba(36,129,204,0.12),rgba(22,163,74,0.08))] p-6 dark:bg-[linear-gradient(135deg,rgba(36,129,204,0.22),rgba(22,163,74,0.12))] sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-font dark:text-[#f5f9fc]">
+              Built as a working app, not a static demo.
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-font-subtle dark:text-[#b3c1ce]">
+              Create two accounts, open separate sessions, and the system shows
+              the core loop: messages, presence, delivery status, and realtime
+              updates moving through the stack.
+            </p>
           </div>
-        </section>
-      </div>
+          <Link
+            to="/register"
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-font-primary-contrast transition-colors hover:bg-primary-dark dark:text-white"
+          >
+            Try Telechat
+          </Link>
+        </div>
+      </section>
     </main>
   );
 };
 
-const SectionHeader = ({
-  label,
-  title,
-  subtitle,
-}: {
-  label: string;
-  title: string;
-  subtitle: string;
-}) => (
-  <div className="mb-8">
-    <span className="text-xs font-semibold uppercase tracking-widest text-font-primary">
-      {label}
-    </span>
-    <h2 className="text-2xl font-bold text-font mt-1 mb-2">{title}</h2>
-    <p className="text-font-subtle text-sm leading-relaxed max-w-2xl">
-      {subtitle}
-    </p>
-  </div>
-);
+const ProductPanel = () => (
+  <div className="rounded-lg border border-border bg-elevation-contrast p-3 shadow-xl shadow-black/5 dark:bg-[#111b26] dark:shadow-black/30">
+    <div className="rounded-md border border-border bg-background-primary dark:bg-[#0d1520]">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div className="flex items-center gap-3">
+          <img
+            src="/logo_64.png"
+            alt="Telechat"
+            className="size-9 rounded-md bg-primary/10 p-1.5 dark:bg-[#173653]"
+          />
+          <div>
+            <div className="text-sm font-semibold text-font dark:text-[#f5f9fc]">
+              Telechat
+            </div>
+            <div className="text-xs text-font-subtle dark:text-[#9fb0c2]">
+              Realtime workspace
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-icon-success" />
+          <span className="text-xs font-medium text-font-subtle dark:text-[#aab8c6]">
+            Online
+          </span>
+        </div>
+      </div>
 
-const TechCard = ({
-  name,
-  description,
-  icon,
-}: {
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-}) => (
-  <div className="flex gap-3 p-4 rounded-xl bg-elevation border border-border/30 hover:bg-elevation-hover transition-colors">
-    <span className="text-2xl shrink-0 mt-0.5">{icon}</span>
-    <div>
-      <div className="text-font font-semibold text-sm">{name}</div>
-      <div className="text-font-subtle text-xs leading-relaxed mt-0.5">
-        {description}
+      <div className="grid min-h-[360px] grid-cols-1 sm:grid-cols-[0.92fr_1.35fr]">
+        <aside className="hidden border-r border-border bg-elevation/70 p-3 dark:bg-[#101b28] sm:block">
+          {['Dani', 'Product feedback', 'Deploy notes', 'Mobile test'].map(
+            (chat, index) => (
+              <div
+                key={chat}
+                className={`mb-2 rounded-md px-3 py-2 ${
+                  index === 0
+                    ? 'bg-primary text-font-primary-contrast dark:text-white'
+                    : 'bg-background-primary text-font dark:bg-[#152130] dark:text-[#eaf2f8]'
+                }`}
+              >
+                <div className="text-sm font-semibold">{chat}</div>
+                <div
+                  className={`mt-1 truncate text-xs ${
+                    index === 0
+                      ? 'text-font-primary-contrast/80 dark:text-white/78'
+                      : 'text-font-subtle dark:text-[#9fb0c2]'
+                  }`}
+                >
+                  {index === 0
+                    ? 'New user onboarding is live'
+                    : 'Socket updates synced'}
+                </div>
+              </div>
+            ),
+          )}
+        </aside>
+
+        <div className="flex flex-col p-4">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold text-font dark:text-[#f5f9fc]">
+                Dani
+              </div>
+              <div className="text-xs text-font-subtle dark:text-[#9fb0c2]">
+                last seen recently
+              </div>
+            </div>
+            <div className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-font-primary dark:bg-[#12314a] dark:text-[#8fd0ff]">
+              encrypted auth
+            </div>
+          </div>
+
+          <div className="flex flex-1 flex-col justify-end gap-3">
+            <Bubble align="left">
+              Welcome to the app. This is the first chat every new account sees.
+            </Bubble>
+            <Bubble align="right">
+              Nice. Messages, delivery state, and presence are all live?
+            </Bubble>
+            <Bubble align="left">
+              Yes - the API, socket gateway, and local cache stay in sync.
+            </Bubble>
+          </div>
+
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-border bg-elevation px-3 py-2 dark:bg-[#111b26]">
+            <div className="h-2 flex-1 rounded-full bg-border dark:bg-[#2a3b4f]" />
+            <HiOutlineBolt className="size-4 text-font-primary" />
+          </div>
+        </div>
       </div>
     </div>
   </div>
 );
+
+const Bubble = ({
+  align,
+  children,
+}: {
+  align: 'left' | 'right';
+  children: React.ReactNode;
+}) => (
+  <div
+    className={`max-w-[84%] rounded-lg px-3 py-2 text-sm leading-6 ${
+      align === 'right'
+        ? 'ml-auto bg-primary text-font-primary-contrast dark:text-white'
+        : 'mr-auto bg-elevation text-font dark:bg-[#172433] dark:text-[#eaf2f8]'
+    }`}
+  >
+    {children}
+  </div>
+);
+
+const SectionBand = ({
+  eyebrow,
+  title,
+  description,
+  children,
+  muted = false,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  muted?: boolean;
+}) => (
+  <section
+    className={`border-t border-border ${
+      muted
+        ? 'bg-elevation/45 dark:bg-[#0f1823]'
+        : 'bg-background-primary dark:bg-[#0b1118]'
+    }`}
+  >
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+      <div className="mb-7 max-w-3xl">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-font-primary dark:text-[#8fd0ff]">
+          {eyebrow}
+        </div>
+        <h2 className="text-2xl font-semibold leading-snug text-font dark:text-[#f5f9fc] sm:text-3xl">
+          {title}
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-font-subtle dark:text-[#b3c1ce] sm:text-base">
+          {description}
+        </p>
+      </div>
+      {children}
+    </div>
+  </section>
+);
+
+const CapabilityCard = ({ icon: Icon, title, description }: Capability) => (
+  <article className="rounded-lg border border-border bg-elevation-contrast p-5 dark:bg-[#111b26]">
+    <div className="mb-4 flex size-10 items-center justify-center rounded-md bg-primary/10 text-font-primary dark:bg-[#12314a] dark:text-[#8fd0ff]">
+      <Icon className="size-5" />
+    </div>
+    <h3 className="text-base font-semibold text-font dark:text-[#f5f9fc]">
+      {title}
+    </h3>
+    <p className="mt-2 text-sm leading-6 text-font-subtle dark:text-[#aab8c6]">
+      {description}
+    </p>
+  </article>
+);
+
+const LayerCard = ({ eyebrow, title, description, points }: SystemLayer) => (
+  <article className="rounded-lg border border-border bg-background-primary p-5 dark:bg-[#111b26]">
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-font-primary dark:bg-[#12314a] dark:text-[#8fd0ff]">
+        {eyebrow}
+      </span>
+      <HiOutlineSquares2X2 className="size-4 text-icon-subtle dark:text-[#8da0b4]" />
+    </div>
+    <h3 className="text-base font-semibold text-font dark:text-[#f5f9fc]">
+      {title}
+    </h3>
+    <p className="mt-2 text-sm leading-6 text-font-subtle dark:text-[#aab8c6]">
+      {description}
+    </p>
+    <ul className="mt-4 space-y-2">
+      {points.map((point) => (
+        <li
+          key={point}
+          className="flex items-center gap-2 text-sm text-font dark:text-[#e2ebf2]"
+        >
+          <HiOutlineCheckCircle className="size-4 shrink-0 text-icon-success" />
+          {point}
+        </li>
+      ))}
+    </ul>
+  </article>
+);
+
+const StackBlock = ({ title, items }: StackGroup) => (
+  <article className="rounded-lg border border-border bg-elevation-contrast p-5 dark:bg-[#111b26]">
+    <div className="mb-4 flex items-center gap-2">
+      {title === 'Backend' && (
+        <HiOutlineCpuChip className="size-5 text-font-primary" />
+      )}
+      {title === 'Frontend' && (
+        <HiOutlineWrenchScrewdriver className="size-5 text-font-primary" />
+      )}
+      {title === 'Operations' && (
+        <HiOutlineServerStack className="size-5 text-font-primary" />
+      )}
+      <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-font dark:text-[#f5f9fc]">
+        {title}
+      </h3>
+    </div>
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span
+          key={item}
+          className="rounded-md border border-border bg-background-primary px-2.5 py-1.5 text-sm font-medium text-font-subtle dark:bg-[#0d1520] dark:text-[#b3c1ce]"
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  </article>
+);
+
+const DeliveryItem = ({
+  icon: Icon,
+  title,
+  text,
+}: {
+  icon: IconType;
+  title: string;
+  text: string;
+}) => (
+  <div className="flex gap-3 rounded-md border border-border bg-background-primary p-4 dark:bg-[#0d1520]">
+    <Icon className="mt-0.5 size-5 shrink-0 text-font-primary" />
+    <div>
+      <div className="text-sm font-semibold text-font dark:text-[#f5f9fc]">
+        {title}
+      </div>
+      <p className="mt-1 text-xs leading-5 text-font-subtle dark:text-[#aab8c6]">
+        {text}
+      </p>
+    </div>
+  </div>
+);
+
+type Capability = {
+  icon: IconType;
+  title: string;
+  description: string;
+};
+
+type SystemLayer = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  points: string[];
+};
+
+type StackGroup = {
+  title: 'Backend' | 'Frontend' | 'Operations';
+  items: string[];
+};

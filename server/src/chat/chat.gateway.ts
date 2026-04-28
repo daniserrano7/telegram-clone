@@ -29,6 +29,8 @@ if (!allowedOrigins) {
 }
 
 @WebSocketGateway({
+  pingInterval: 25_000,
+  pingTimeout: 20_000,
   cors: {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
@@ -37,11 +39,13 @@ if (!allowedOrigins) {
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
-  
+
   @WebSocketServer()
   server: Server;
 
-  private readonly heartbeatInterval = 60_000; // 1 minute
+  // App-level keepalive below Cloudflare's origin read timeout. Socket.IO also
+  // sends Engine.IO ping/pong packets via pingInterval/pingTimeout above.
+  private readonly heartbeatInterval = 50_000;
 
   constructor(
     private readonly userService: UserService,
@@ -49,7 +53,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwtService: JwtService,
     private readonly userStatusService: UserStatusService,
     private readonly notificationService: NotificationService,
-  ) {}
+  ) { }
 
   afterInit() {
     this.userStatusService.setServer(this.server);
@@ -63,9 +67,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
+      client.data.userId = userId;
+
       // Set up heartbeat interval for this client
       const interval = setInterval(() => {
-        client.emit(Events.HEARTBEAT);
+        if (client.connected) {
+          client.emit(Events.HEARTBEAT);
+        }
       }, this.heartbeatInterval);
 
       // Store the interval reference in the socket data
@@ -98,16 +106,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleDisconnect(client: Socket) {
     try {
-      const userId = client.data.userId as UserId;
-      if (!userId) return;
-
       // Clear heartbeat interval
       if (client.data.heartbeatInterval) {
         clearInterval(client.data.heartbeatInterval);
       }
 
+      const userId = client.data.userId as UserId;
+      if (!userId) return;
+
       // Handle user disconnection
-      await this.userStatusService.handleUserDisconnect(userId);
+      await this.userStatusService.handleUserDisconnect(userId, client.id);
     } catch (error) {
       this.logger.error('Disconnection error:', error);
     }
@@ -117,7 +125,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleHeartbeat(@ConnectedSocket() client: Socket) {
     const userId = this.getUserIdFromSocket(client);
     if (userId) {
-      this.userStatusService.updateHeartbeat(userId);
+      this.userStatusService.updateHeartbeat(userId, client.id);
     }
   }
 
@@ -125,15 +133,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleConnectionVerify(@ConnectedSocket() client: Socket) {
     const userId = this.getUserIdFromSocket(client);
     if (userId) {
-      // Connection is valid, update verification time
-      const connection = this.userStatusService.getUserConnection(userId);
-      if (connection) {
-        connection.lastVerified = new Date();
-      }
+      this.userStatusService.markConnectionVerified(userId, client.id);
     }
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron('*/30 * * * * *')
   handleStaleConnections() {
     this.userStatusService.checkStaleConnections();
   }

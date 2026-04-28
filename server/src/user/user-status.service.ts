@@ -4,8 +4,7 @@ import { Server } from 'socket.io';
 import { Events } from '@shared/gateway.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-interface UserConnection {
-  socketId: string;
+interface SocketConnection {
   lastHeartbeat: Date;
   lastVerified: Date;
 }
@@ -13,10 +12,10 @@ interface UserConnection {
 @Injectable()
 export class UserStatusService implements OnModuleInit {
   private readonly logger = new Logger(UserStatusService.name);
-  private readonly onlineUsers = new Map<number, UserConnection>();
+  private readonly onlineUsers = new Map<number, Map<string, SocketConnection>>();
   private server: Server;
   // Define constants for timing values
-  private readonly STALE_CONNECTION_THRESHOLD = 30000; // 30 seconds
+  private readonly STALE_CONNECTION_THRESHOLD = 150000; // 2.5 minutes
   private readonly VERIFICATION_INTERVAL = 300000; // 5 minutes
 
   constructor(private readonly db: DbService) {}
@@ -45,18 +44,19 @@ export class UserStatusService implements OnModuleInit {
     try {
       this.logger.log(`User ${userId} connected with socket ${socketId}`);
 
-      // Store user connection info in memory
-      this.onlineUsers.set(userId, {
-        socketId,
+      const existingConnections = this.onlineUsers.get(userId) ?? new Map();
+      const isFirstConnection = existingConnections.size === 0;
+
+      existingConnections.set(socketId, {
         lastHeartbeat: new Date(),
         lastVerified: new Date(),
       });
+      this.onlineUsers.set(userId, existingConnections);
 
-      // Atomic update in DB
-      await this.updateUserStatus(userId, 'ONLINE');
-
-      // Broadcast status change to other users
-      this.broadcastStatusChange(userId, 'ONLINE');
+      if (isFirstConnection) {
+        await this.updateUserStatus(userId, 'ONLINE');
+        this.broadcastStatusChange(userId, 'ONLINE');
+      }
 
       // Send current online status of all other users to the newly connected user
       this.sendCurrentOnlineStatusToUser(userId, socketId);
@@ -68,17 +68,25 @@ export class UserStatusService implements OnModuleInit {
     }
   }
 
-  async handleUserDisconnect(userId: number) {
+  async handleUserDisconnect(userId: number, socketId: string) {
     try {
-      this.logger.log(`User ${userId} disconnected`);
+      this.logger.log(`User ${userId} disconnected from socket ${socketId}`);
 
-      // Remove user from online users memory map
+      const existingConnections = this.onlineUsers.get(userId);
+      if (!existingConnections) {
+        return true;
+      }
+
+      existingConnections.delete(socketId);
+
+      if (existingConnections.size > 0) {
+        this.onlineUsers.set(userId, existingConnections);
+        return true;
+      }
+
       this.onlineUsers.delete(userId);
 
-      // Atomic update in DB
       await this.updateUserStatus(userId, 'OFFLINE');
-
-      // Broadcast status change to other users
       this.broadcastStatusChange(userId, 'OFFLINE');
 
       return true;
@@ -89,46 +97,59 @@ export class UserStatusService implements OnModuleInit {
   }
 
   isUserOnline(userId: number): boolean {
-    return this.onlineUsers.has(userId);
+    return (this.onlineUsers.get(userId)?.size ?? 0) > 0;
   }
 
-  getUserSocketId(userId: number): string | undefined {
-    return this.onlineUsers.get(userId)?.socketId;
-  }
-
-  getUserConnection(userId: number): UserConnection | undefined {
-    return this.onlineUsers.get(userId);
-  }
-
-  updateHeartbeat(userId: number) {
-    const connection = this.onlineUsers.get(userId);
+  updateHeartbeat(userId: number, socketId: string) {
+    const connections = this.onlineUsers.get(userId);
+    const connection = connections?.get(socketId);
     if (connection) {
       connection.lastHeartbeat = new Date();
-      this.onlineUsers.set(userId, connection);
+      connections.set(socketId, connection);
+      this.onlineUsers.set(userId, connections);
+    }
+  }
+
+  markConnectionVerified(userId: number, socketId: string) {
+    const connections = this.onlineUsers.get(userId);
+    const connection = connections?.get(socketId);
+    if (connection) {
+      connection.lastVerified = new Date();
+      connections.set(socketId, connection);
+      this.onlineUsers.set(userId, connections);
     }
   }
 
   /**
-   * Check for stale connections (no heartbeat for more than 30 seconds)
+   * Check for stale connections.
+   * The threshold must stay comfortably above the gateway heartbeat interval.
    * Runs every 30 seconds via cron job in the gateway
    */
   checkStaleConnections() {
     this.logger.debug('Checking for stale connections...');
     const now = new Date();
     let staleConnectionsCount = 0;
+    const staleConnections: Array<{ userId: number; socketId: string }> = [];
 
-    for (const [userId, connection] of this.onlineUsers.entries()) {
-      const timeSinceLastHeartbeat =
-        now.getTime() - connection.lastHeartbeat.getTime();
+    for (const [userId, connections] of this.onlineUsers.entries()) {
+      for (const [socketId, connection] of connections.entries()) {
+        const timeSinceLastHeartbeat =
+          now.getTime() - connection.lastHeartbeat.getTime();
 
-      if (timeSinceLastHeartbeat > this.STALE_CONNECTION_THRESHOLD) {
-        this.logger.warn(
-          `User ${userId} has a stale connection: ${timeSinceLastHeartbeat}ms since last heartbeat`,
-        );
-        this.handleUserDisconnect(userId);
-        staleConnectionsCount++;
+        if (timeSinceLastHeartbeat > this.STALE_CONNECTION_THRESHOLD) {
+          this.logger.warn(
+            `User ${userId} has a stale connection on socket ${socketId}: ${timeSinceLastHeartbeat}ms since last heartbeat`,
+          );
+          staleConnections.push({ userId, socketId });
+          staleConnectionsCount++;
+        }
       }
     }
+
+    staleConnections.forEach(({ userId, socketId }) => {
+      this.server?.sockets.sockets.get(socketId)?.disconnect(true);
+      void this.handleUserDisconnect(userId, socketId);
+    });
 
     if (staleConnectionsCount > 0) {
       this.logger.log(`Cleaned up ${staleConnectionsCount} stale connections`);
@@ -147,32 +168,26 @@ export class UserStatusService implements OnModuleInit {
     const now = new Date();
     let failedCount = 0;
 
-    for (const [userId, connection] of this.onlineUsers.entries()) {
-      // Only verify connections we haven't verified recently
-      const timeSinceLastVerification =
-        now.getTime() - connection.lastVerified.getTime();
+    for (const [userId, connections] of this.onlineUsers.entries()) {
+      for (const [socketId, connection] of connections.entries()) {
+        const timeSinceLastVerification =
+          now.getTime() - connection.lastVerified.getTime();
 
-      if (timeSinceLastVerification > this.VERIFICATION_INTERVAL) {
-        try {
-          // Send a ping to verify connection is active
-          this.server
-            .to(connection.socketId)
-            .emit(Events.CONNECTION_VERIFY, { userId });
+        if (timeSinceLastVerification > this.VERIFICATION_INTERVAL) {
+          try {
+            this.server.to(socketId).emit(Events.CONNECTION_VERIFY, { userId });
+            this.logger.debug(
+              `Sent connection verification to user ${userId} on socket ${socketId}`,
+            );
+          } catch (error) {
+            this.logger.error(
+              `Failed to verify connection for user ${userId} on socket ${socketId}:`,
+              error,
+            );
 
-          // Update verification timestamp
-          connection.lastVerified = now;
-          this.onlineUsers.set(userId, connection);
-
-          this.logger.debug(`Verified connection for user ${userId}`);
-        } catch (error) {
-          this.logger.error(
-            `Failed to verify connection for user ${userId}:`,
-            error,
-          );
-
-          // If ping fails, mark user as disconnected
-          await this.handleUserDisconnect(userId);
-          failedCount++;
+            await this.handleUserDisconnect(userId, socketId);
+            failedCount++;
+          }
         }
       }
     }
@@ -198,7 +213,7 @@ export class UserStatusService implements OnModuleInit {
       });
 
       for (const user of onlineUsersInDb) {
-        if (!this.onlineUsers.has(user.id)) {
+        if (!this.isUserOnline(user.id)) {
           this.logger.warn(
             `Found inconsistency: User ${user.id} marked online in DB but not in memory`,
           );
@@ -258,9 +273,9 @@ export class UserStatusService implements OnModuleInit {
     this.logger.debug(`Sending current online status to user ${userId}`);
     
     // Send status of all currently online users to the newly connected user
-    for (const [onlineUserId] of this.onlineUsers.entries()) {
+    for (const [onlineUserId, connections] of this.onlineUsers.entries()) {
       // Don't send the user their own status
-      if (onlineUserId !== userId) {
+      if (onlineUserId !== userId && connections.size > 0) {
         this.server.to(socketId).emit(Events.USER_STATUS_CHANGE, {
           userId: onlineUserId,
           status: 'ONLINE',
