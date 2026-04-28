@@ -117,12 +117,12 @@ const deliveryFlow = [
 
 export const AboutPage = () => {
   return (
-    <main className="h-full w-full overflow-y-auto bg-background-primary text-font">
-      <nav className="sticky top-0 z-20 border-b border-border/70 bg-background-primary/90 backdrop-blur-xl">
+    <main className="h-full w-full overflow-y-auto bg-background-primary text-font dark:bg-[#0b1118] dark:text-[#eaf2f8]">
+      <nav className="sticky top-0 z-20 border-b border-border bg-background-primary/90 backdrop-blur-xl dark:bg-[#0b1118]/90">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium text-font-subtle transition-colors hover:text-font"
+            className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium text-font-subtle transition-colors hover:text-font dark:text-[#a7b6c6] dark:hover:text-white"
           >
             <HiOutlineArrowLeft className="size-4" />
             Back
@@ -132,7 +132,7 @@ export const AboutPage = () => {
             href="https://github.com/daniserrano7/telegram-clone"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium text-font-subtle transition-colors hover:text-font"
+            className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium text-font-subtle transition-colors hover:text-font dark:text-[#a7b6c6] dark:hover:text-white"
           >
             <HiOutlineCodeBracketSquare className="size-4" />
             Source
@@ -140,20 +140,20 @@ export const AboutPage = () => {
         </div>
       </nav>
 
-      <section className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(36,129,204,0.10),transparent_72%)]">
+      <section className="border-b border-border bg-[linear-gradient(180deg,rgba(36,129,204,0.10),transparent_72%)] dark:bg-[radial-gradient(circle_at_78%_18%,rgba(36,129,204,0.22),transparent_34%),linear-gradient(180deg,#0f1823_0%,#0b1118_76%)]">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-md border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-font-primary">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-font-primary dark:bg-[#12314a] dark:text-[#8fd0ff]">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               Engineering case study
             </div>
 
-            <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-font sm:text-5xl">
+            <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-font dark:text-[#f5f9fc] sm:text-5xl">
               Telechat is a full-stack messaging system built around realtime
               product behavior.
             </h1>
 
-            <p className="mt-5 max-w-2xl text-base leading-7 text-font-subtle sm:text-lg">
+            <p className="mt-5 max-w-2xl text-base leading-7 text-font-subtle dark:text-[#b3c1ce] sm:text-lg">
               The project connects a modular NestJS API, a typed React client,
               PostgreSQL persistence, WebSocket events, offline caching, and
               push notifications into one coherent chat experience.
@@ -162,7 +162,7 @@ export const AboutPage = () => {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/register"
-                className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-font-primary-contrast shadow-sm shadow-primary/20 transition-colors hover:bg-primary-dark"
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-font-primary-contrast shadow-sm shadow-primary/20 transition-colors hover:bg-primary-dark dark:text-white dark:shadow-primary/30"
               >
                 <HiOutlineBolt className="size-4" />
                 Open app
@@ -171,7 +171,7 @@ export const AboutPage = () => {
                 href="https://github.com/daniserrano7/telegram-clone"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-elevation-contrast px-4 text-sm font-semibold text-font transition-colors hover:bg-elevation"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-elevation-contrast px-4 text-sm font-semibold text-font transition-colors hover:bg-elevation dark:bg-[#111b26] dark:text-[#eaf2f8] dark:hover:bg-[#172433]"
               >
                 <HiOutlineCommandLine className="size-4" />
                 View repository
@@ -188,12 +188,12 @@ export const AboutPage = () => {
           {productNotes.map((note) => (
             <div
               key={note.label}
-              className="rounded-lg border border-border bg-elevation-contrast p-5"
+              className="rounded-lg border border-border bg-elevation-contrast p-5 dark:bg-[#111b26]"
             >
-              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-font-primary">
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-font-primary dark:text-[#8fd0ff]">
                 {note.label}
               </div>
-              <p className="mt-2 text-sm leading-6 text-font-subtle">
+              <p className="mt-2 text-sm leading-6 text-font-subtle dark:text-[#aab8c6]">
                 {note.value}
               </p>
             </div>
@@ -244,15 +244,15 @@ export const AboutPage = () => {
         description="The app is deployed from a pnpm monorepo to a VPS with Nginx, PM2, PostgreSQL, migrations, and static frontend hosting."
         muted
       >
-        <div className="rounded-lg border border-border bg-elevation-contrast p-5 sm:p-6">
+        <div className="rounded-lg border border-border bg-elevation-contrast p-5 dark:bg-[#111b26] sm:p-6">
           <div className="grid gap-3 sm:grid-cols-6">
             {deliveryFlow.map((step, index) => (
               <div key={step} className="relative">
-                <div className="flex h-full min-h-20 flex-col justify-between rounded-md border border-border/80 bg-background-primary p-4">
-                  <span className="text-xs font-mono text-font-subtle">
+                <div className="flex h-full min-h-20 flex-col justify-between rounded-md border border-border bg-background-primary p-4 dark:bg-[#0d1520]">
+                  <span className="text-xs font-mono text-font-subtle dark:text-[#8da0b4]">
                     0{index + 1}
                   </span>
-                  <span className="mt-4 text-sm font-semibold text-font">
+                  <span className="mt-4 text-sm font-semibold text-font dark:text-[#eaf2f8]">
                     {step}
                   </span>
                 </div>
@@ -281,12 +281,12 @@ export const AboutPage = () => {
       </SectionBand>
 
       <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-6">
-        <div className="flex flex-col gap-5 rounded-lg border border-primary/20 bg-[linear-gradient(135deg,rgba(36,129,204,0.12),rgba(22,163,74,0.08))] p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-5 rounded-lg border border-primary bg-[linear-gradient(135deg,rgba(36,129,204,0.12),rgba(22,163,74,0.08))] p-6 dark:bg-[linear-gradient(135deg,rgba(36,129,204,0.22),rgba(22,163,74,0.12))] sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-font">
+            <h2 className="text-xl font-semibold text-font dark:text-[#f5f9fc]">
               Built as a working app, not a static demo.
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-font-subtle">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-font-subtle dark:text-[#b3c1ce]">
               Create two accounts, open separate sessions, and the system shows
               the core loop: messages, presence, delivery status, and realtime
               updates moving through the stack.
@@ -294,7 +294,7 @@ export const AboutPage = () => {
           </div>
           <Link
             to="/register"
-            className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-font-primary-contrast transition-colors hover:bg-primary-dark"
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-font-primary-contrast transition-colors hover:bg-primary-dark dark:text-white"
           >
             Try Telechat
           </Link>
@@ -305,44 +305,50 @@ export const AboutPage = () => {
 };
 
 const ProductPanel = () => (
-  <div className="rounded-lg border border-border bg-elevation-contrast p-3 shadow-xl shadow-black/5">
-    <div className="rounded-md border border-border/80 bg-background-primary">
+  <div className="rounded-lg border border-border bg-elevation-contrast p-3 shadow-xl shadow-black/5 dark:bg-[#111b26] dark:shadow-black/30">
+    <div className="rounded-md border border-border bg-background-primary dark:bg-[#0d1520]">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
           <img
             src="/logo_64.png"
             alt="Telechat"
-            className="size-9 rounded-md bg-primary/10 p-1.5"
+            className="size-9 rounded-md bg-primary/10 p-1.5 dark:bg-[#173653]"
           />
           <div>
-            <div className="text-sm font-semibold text-font">Telechat</div>
-            <div className="text-xs text-font-subtle">Realtime workspace</div>
+            <div className="text-sm font-semibold text-font dark:text-[#f5f9fc]">
+              Telechat
+            </div>
+            <div className="text-xs text-font-subtle dark:text-[#9fb0c2]">
+              Realtime workspace
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-icon-success" />
-          <span className="text-xs font-medium text-font-subtle">Online</span>
+          <span className="text-xs font-medium text-font-subtle dark:text-[#aab8c6]">
+            Online
+          </span>
         </div>
       </div>
 
       <div className="grid min-h-[360px] grid-cols-1 sm:grid-cols-[0.92fr_1.35fr]">
-        <aside className="hidden border-r border-border bg-elevation/70 p-3 sm:block">
+        <aside className="hidden border-r border-border bg-elevation/70 p-3 dark:bg-[#101b28] sm:block">
           {['Dani', 'Product feedback', 'Deploy notes', 'Mobile test'].map(
             (chat, index) => (
               <div
                 key={chat}
                 className={`mb-2 rounded-md px-3 py-2 ${
                   index === 0
-                    ? 'bg-primary text-font-primary-contrast'
-                    : 'bg-background-primary text-font'
+                    ? 'bg-primary text-font-primary-contrast dark:text-white'
+                    : 'bg-background-primary text-font dark:bg-[#152130] dark:text-[#eaf2f8]'
                 }`}
               >
                 <div className="text-sm font-semibold">{chat}</div>
                 <div
                   className={`mt-1 truncate text-xs ${
                     index === 0
-                      ? 'text-font-primary-contrast/80'
-                      : 'text-font-subtle'
+                      ? 'text-font-primary-contrast/80 dark:text-white/78'
+                      : 'text-font-subtle dark:text-[#9fb0c2]'
                   }`}
                 >
                   {index === 0
@@ -350,17 +356,21 @@ const ProductPanel = () => (
                     : 'Socket updates synced'}
                 </div>
               </div>
-            )
+            ),
           )}
         </aside>
 
         <div className="flex flex-col p-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <div className="text-sm font-semibold text-font">Dani</div>
-              <div className="text-xs text-font-subtle">last seen recently</div>
+              <div className="text-sm font-semibold text-font dark:text-[#f5f9fc]">
+                Dani
+              </div>
+              <div className="text-xs text-font-subtle dark:text-[#9fb0c2]">
+                last seen recently
+              </div>
             </div>
-            <div className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-font-primary">
+            <div className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-font-primary dark:bg-[#12314a] dark:text-[#8fd0ff]">
               encrypted auth
             </div>
           </div>
@@ -377,8 +387,8 @@ const ProductPanel = () => (
             </Bubble>
           </div>
 
-          <div className="mt-4 flex items-center gap-2 rounded-md border border-border bg-elevation px-3 py-2">
-            <div className="h-2 flex-1 rounded-full bg-border" />
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-border bg-elevation px-3 py-2 dark:bg-[#111b26]">
+            <div className="h-2 flex-1 rounded-full bg-border dark:bg-[#2a3b4f]" />
             <HiOutlineBolt className="size-4 text-font-primary" />
           </div>
         </div>
@@ -397,8 +407,8 @@ const Bubble = ({
   <div
     className={`max-w-[84%] rounded-lg px-3 py-2 text-sm leading-6 ${
       align === 'right'
-        ? 'ml-auto bg-primary text-font-primary-contrast'
-        : 'mr-auto bg-elevation text-font'
+        ? 'ml-auto bg-primary text-font-primary-contrast dark:text-white'
+        : 'mr-auto bg-elevation text-font dark:bg-[#172433] dark:text-[#eaf2f8]'
     }`}
   >
     {children}
@@ -419,19 +429,21 @@ const SectionBand = ({
   muted?: boolean;
 }) => (
   <section
-    className={`border-t border-border/70 ${
-      muted ? 'bg-elevation/45' : 'bg-background-primary'
+    className={`border-t border-border ${
+      muted
+        ? 'bg-elevation/45 dark:bg-[#0f1823]'
+        : 'bg-background-primary dark:bg-[#0b1118]'
     }`}
   >
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
       <div className="mb-7 max-w-3xl">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-font-primary">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-font-primary dark:text-[#8fd0ff]">
           {eyebrow}
         </div>
-        <h2 className="text-2xl font-semibold leading-snug text-font sm:text-3xl">
+        <h2 className="text-2xl font-semibold leading-snug text-font dark:text-[#f5f9fc] sm:text-3xl">
           {title}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-font-subtle sm:text-base">
+        <p className="mt-3 text-sm leading-6 text-font-subtle dark:text-[#b3c1ce] sm:text-base">
           {description}
         </p>
       </div>
@@ -441,28 +453,39 @@ const SectionBand = ({
 );
 
 const CapabilityCard = ({ icon: Icon, title, description }: Capability) => (
-  <article className="rounded-lg border border-border bg-elevation-contrast p-5">
-    <div className="mb-4 flex size-10 items-center justify-center rounded-md bg-primary/10 text-font-primary">
+  <article className="rounded-lg border border-border bg-elevation-contrast p-5 dark:bg-[#111b26]">
+    <div className="mb-4 flex size-10 items-center justify-center rounded-md bg-primary/10 text-font-primary dark:bg-[#12314a] dark:text-[#8fd0ff]">
       <Icon className="size-5" />
     </div>
-    <h3 className="text-base font-semibold text-font">{title}</h3>
-    <p className="mt-2 text-sm leading-6 text-font-subtle">{description}</p>
+    <h3 className="text-base font-semibold text-font dark:text-[#f5f9fc]">
+      {title}
+    </h3>
+    <p className="mt-2 text-sm leading-6 text-font-subtle dark:text-[#aab8c6]">
+      {description}
+    </p>
   </article>
 );
 
 const LayerCard = ({ eyebrow, title, description, points }: SystemLayer) => (
-  <article className="rounded-lg border border-border bg-background-primary p-5">
+  <article className="rounded-lg border border-border bg-background-primary p-5 dark:bg-[#111b26]">
     <div className="mb-3 flex items-center justify-between gap-3">
-      <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-font-primary">
+      <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-font-primary dark:bg-[#12314a] dark:text-[#8fd0ff]">
         {eyebrow}
       </span>
-      <HiOutlineSquares2X2 className="size-4 text-icon-subtle" />
+      <HiOutlineSquares2X2 className="size-4 text-icon-subtle dark:text-[#8da0b4]" />
     </div>
-    <h3 className="text-base font-semibold text-font">{title}</h3>
-    <p className="mt-2 text-sm leading-6 text-font-subtle">{description}</p>
+    <h3 className="text-base font-semibold text-font dark:text-[#f5f9fc]">
+      {title}
+    </h3>
+    <p className="mt-2 text-sm leading-6 text-font-subtle dark:text-[#aab8c6]">
+      {description}
+    </p>
     <ul className="mt-4 space-y-2">
       {points.map((point) => (
-        <li key={point} className="flex items-center gap-2 text-sm text-font">
+        <li
+          key={point}
+          className="flex items-center gap-2 text-sm text-font dark:text-[#e2ebf2]"
+        >
           <HiOutlineCheckCircle className="size-4 shrink-0 text-icon-success" />
           {point}
         </li>
@@ -472,7 +495,7 @@ const LayerCard = ({ eyebrow, title, description, points }: SystemLayer) => (
 );
 
 const StackBlock = ({ title, items }: StackGroup) => (
-  <article className="rounded-lg border border-border bg-elevation-contrast p-5">
+  <article className="rounded-lg border border-border bg-elevation-contrast p-5 dark:bg-[#111b26]">
     <div className="mb-4 flex items-center gap-2">
       {title === 'Backend' && (
         <HiOutlineCpuChip className="size-5 text-font-primary" />
@@ -483,7 +506,7 @@ const StackBlock = ({ title, items }: StackGroup) => (
       {title === 'Operations' && (
         <HiOutlineServerStack className="size-5 text-font-primary" />
       )}
-      <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-font">
+      <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-font dark:text-[#f5f9fc]">
         {title}
       </h3>
     </div>
@@ -491,7 +514,7 @@ const StackBlock = ({ title, items }: StackGroup) => (
       {items.map((item) => (
         <span
           key={item}
-          className="rounded-md border border-border bg-background-primary px-2.5 py-1.5 text-sm font-medium text-font-subtle"
+          className="rounded-md border border-border bg-background-primary px-2.5 py-1.5 text-sm font-medium text-font-subtle dark:bg-[#0d1520] dark:text-[#b3c1ce]"
         >
           {item}
         </span>
@@ -509,11 +532,15 @@ const DeliveryItem = ({
   title: string;
   text: string;
 }) => (
-  <div className="flex gap-3 rounded-md border border-border/80 bg-background-primary p-4">
+  <div className="flex gap-3 rounded-md border border-border bg-background-primary p-4 dark:bg-[#0d1520]">
     <Icon className="mt-0.5 size-5 shrink-0 text-font-primary" />
     <div>
-      <div className="text-sm font-semibold text-font">{title}</div>
-      <p className="mt-1 text-xs leading-5 text-font-subtle">{text}</p>
+      <div className="text-sm font-semibold text-font dark:text-[#f5f9fc]">
+        {title}
+      </div>
+      <p className="mt-1 text-xs leading-5 text-font-subtle dark:text-[#aab8c6]">
+        {text}
+      </p>
     </div>
   </div>
 );
