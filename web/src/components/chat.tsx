@@ -574,7 +574,7 @@ const Message = ({
   isGroup?: boolean;
 }) => {
   const messageRef = useRef<HTMLDivElement>(null);
-  const wasReadRef = useRef(false);
+  const isVisibleRef = useRef(false);
   const retryMessage = useChatStore((state) => state.retryMessage);
   const cancelMessage = useChatStore((state) => state.cancelMessage);
 
@@ -589,28 +589,27 @@ const Message = ({
     }
   }, [isCurrentMatch]);
 
+  const tryMarkAsRead = useCallback(() => {
+    if (
+      !isVisibleRef.current ||
+      isOwn ||
+      isSystemMessage ||
+      message.status === 'READ' ||
+      !socketService.isActuallyConnected()
+    ) {
+      return;
+    }
+
+    socketService.emit(Events.MESSAGE_READ, { messageId: message.id });
+  }, [isOwn, isSystemMessage, message.id, message.status]);
+
   const handleMessageVisible = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const [entry] = entries;
-      const isEntryIntersecting = entry.isIntersecting;
-      const isMessageNotRead = message.status !== 'READ';
-      const isMessageNotOwn = !isOwn;
-      const isSocketConnected = socketService.isConnected();
-      const isMessageNotAlreadyRead = !wasReadRef.current;
-
-      if (
-        isEntryIntersecting &&
-        isMessageNotRead &&
-        isMessageNotOwn &&
-        isMessageNotAlreadyRead &&
-        isSocketConnected &&
-        !isSystemMessage
-      ) {
-        wasReadRef.current = true;
-        socketService.emit(Events.MESSAGE_READ, { messageId: message.id });
-      }
+      isVisibleRef.current = entry.isIntersecting;
+      tryMarkAsRead();
     },
-    [message.id, isOwn, message.status, isSystemMessage]
+    [tryMarkAsRead]
   );
 
   useEffect(() => {
@@ -627,6 +626,18 @@ const Message = ({
       observer.disconnect();
     };
   }, [handleMessageVisible]);
+
+  useEffect(() => {
+    return socketService.onConnectionChange((connected) => {
+      if (connected) {
+        tryMarkAsRead();
+      }
+    });
+  }, [tryMarkAsRead]);
+
+  useEffect(() => {
+    tryMarkAsRead();
+  }, [tryMarkAsRead]);
 
   const renderMessageContent = (
     text: string,

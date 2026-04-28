@@ -115,7 +115,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!userId) return;
 
       // Handle user disconnection
-      await this.userStatusService.handleUserDisconnect(userId);
+      await this.userStatusService.handleUserDisconnect(userId, client.id);
     } catch (error) {
       this.logger.error('Disconnection error:', error);
     }
@@ -125,7 +125,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleHeartbeat(@ConnectedSocket() client: Socket) {
     const userId = this.getUserIdFromSocket(client);
     if (userId) {
-      this.userStatusService.updateHeartbeat(userId);
+      this.userStatusService.updateHeartbeat(userId, client.id);
     }
   }
 
@@ -133,11 +133,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleConnectionVerify(@ConnectedSocket() client: Socket) {
     const userId = this.getUserIdFromSocket(client);
     if (userId) {
-      // Connection is valid, update verification time
-      const connection = this.userStatusService.getUserConnection(userId);
-      if (connection) {
-        connection.lastVerified = new Date();
-      }
+      this.userStatusService.markConnectionVerified(userId, client.id);
     }
   }
 
