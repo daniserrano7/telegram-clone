@@ -39,6 +39,8 @@ interface Chat {
 
 // Same type as Chat but with the id optional (for new chats)
 type ActiveChat = Omit<Chat, 'id'> & { id?: number };
+type UserPreview = Pick<User, 'id' | 'username'> &
+  Partial<Omit<User, 'id' | 'username'>>;
 
 interface ChatStore {
   init: (user: User) => Promise<void>;
@@ -54,7 +56,10 @@ interface ChatStore {
   createGroup: (data: CreateGroupRequestDto) => Promise<{ chatId?: number }>;
   sendMessage: (chatId: number, content: string) => void;
   setActiveChat: (chat: ActiveChat | null) => void;
-  openChatWithUser: (userId: number) => Promise<{ chatId?: number }>;
+  openChatWithUser: (
+    userId: number,
+    userPreview?: UserPreview
+  ) => Promise<{ chatId?: number }>;
   getChatPartner: (chat: ActiveChat) => User | undefined;
   getChatName: (chat: ActiveChat) => string;
   getChatAvatar: (chat: ActiveChat) => { username?: string; src?: string | null };
@@ -74,6 +79,24 @@ const convertToLocalChat = (chat: ChatDto): Chat => ({
     clientMessageId: `server_${msg.id}`,
   })) as LocalMessage[],
 });
+
+const toDraftUser = (user: UserPreview): User => {
+  const now = new Date();
+
+  return {
+    id: user.id,
+    username: user.username,
+    bio: user.bio ?? null,
+    onlineStatus: user.onlineStatus ?? 'OFFLINE',
+    lastConnection: user.lastConnection ?? now,
+    createdAt: user.createdAt ?? now,
+    updatedAt: user.updatedAt ?? now,
+    deletedAt: user.deletedAt ?? null,
+    avatarUrl: user.avatarUrl ?? null,
+    isBlockedByMe: user.isBlockedByMe,
+    hasBlockedMe: user.hasBlockedMe,
+  };
+};
 
 export const useChatStore = create<ChatStore>((set, get) => ({
   init: async (user: User) => {
@@ -301,14 +324,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       activeChat:
         currentActiveChat?.id === chatId && currentActiveChat
           ? {
-              ...currentActiveChat,
-              messages: [...currentActiveChat.messages, optimisticMessage],
-            }
+            ...currentActiveChat,
+            messages: [...currentActiveChat.messages, optimisticMessage],
+          }
           : currentActiveChat,
     });
   },
-  setActiveChat: (chat: ActiveChat | null) => set({ activeChat: chat }),
-  openChatWithUser: async (userId: number) => {
+  setActiveChat: (chat: ActiveChat | null) => {
+    set({ activeChat: chat });
+  },
+  openChatWithUser: async (userId: number, userPreview?: UserPreview) => {
     try {
       // Only search in DIRECT chats
       const foundChat = get().chats.find(
@@ -318,25 +343,45 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           chat.members.some((member) => member.id === userId)
       );
 
+
       if (foundChat) {
         get().setActiveChat(foundChat);
         return { chatId: foundChat.id };
       }
 
-      const result = await apiService.getUser(userId);
-
-      if (result.status === 'error') {
-        console.error(result.errorMsg);
-        return { chatId: undefined };
-      }
-
-      const user = result.data;
       const ownUser = useAuthStore.getState().user;
+
 
       if (!ownUser) {
         console.error('User not logged in');
         return { chatId: undefined };
       }
+
+      let user: User;
+
+      if (userPreview) {
+        user = toDraftUser({ ...userPreview, id: userId });
+      } else {
+        const result = await apiService.getUser(userId);
+
+        if (result.status === 'error') {
+          console.error(result.errorMsg);
+          return { chatId: undefined };
+        }
+
+        user = result.data;
+      }
+
+      const contacts = useContactsStore.getState().contacts;
+      useContactsStore.setState({
+        contacts: {
+          ...contacts,
+          [user.id]: {
+            ...contacts[user.id],
+            ...user,
+          },
+        },
+      });
 
       get().setActiveChat({
         type: 'DIRECT',
@@ -417,11 +462,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           })),
           activeChat: currentActiveChat
             ? {
-                ...currentActiveChat,
-                messages: currentActiveChat.messages.map((msg) =>
-                  msg.id === messageId ? { ...msg, status } : msg
-                ),
-              }
+              ...currentActiveChat,
+              messages: currentActiveChat.messages.map((msg) =>
+                msg.id === messageId ? { ...msg, status } : msg
+              ),
+            }
             : null,
         });
       }
@@ -458,9 +503,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         activeChat:
           currentActiveChat?.id === message.chatId && currentActiveChat
             ? {
-                ...currentActiveChat,
-                messages: [...currentActiveChat.messages, localMessage],
-              }
+              ...currentActiveChat,
+              messages: [...currentActiveChat.messages, localMessage],
+            }
             : currentActiveChat,
       });
 
@@ -602,9 +647,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         activeChat:
           currentActiveChat?.id === message.chatId && currentActiveChat
             ? {
-                ...currentActiveChat,
-                messages: [...currentActiveChat.messages, localMessage],
-              }
+              ...currentActiveChat,
+              messages: [...currentActiveChat.messages, localMessage],
+            }
             : currentActiveChat,
       });
     });
@@ -633,11 +678,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       activeChat:
         currentActiveChat?.id === message.chatId && currentActiveChat
           ? {
-              ...currentActiveChat,
-              messages: currentActiveChat.messages.map((msg) =>
-                msg.clientMessageId === clientMessageId ? confirmedMessage : msg
-              ),
-            }
+            ...currentActiveChat,
+            messages: currentActiveChat.messages.map((msg) =>
+              msg.clientMessageId === clientMessageId ? confirmedMessage : msg
+            ),
+          }
           : currentActiveChat,
     });
   },
@@ -652,11 +697,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       })),
       activeChat: currentActiveChat
         ? {
-            ...currentActiveChat,
-            messages: currentActiveChat.messages.map((msg) =>
-              msg.clientMessageId === clientMessageId ? { ...msg, status } : msg
-            ),
-          }
+          ...currentActiveChat,
+          messages: currentActiveChat.messages.map((msg) =>
+            msg.clientMessageId === clientMessageId ? { ...msg, status } : msg
+          ),
+        }
         : null,
     });
   },
@@ -681,11 +726,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       })),
       activeChat: currentActiveChat
         ? {
-            ...currentActiveChat,
-            messages: currentActiveChat.messages.filter(
-              (msg) => msg.clientMessageId !== clientMessageId
-            ),
-          }
+          ...currentActiveChat,
+          messages: currentActiveChat.messages.filter(
+            (msg) => msg.clientMessageId !== clientMessageId
+          ),
+        }
         : null,
     });
   },
