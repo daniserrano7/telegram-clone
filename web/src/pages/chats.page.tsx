@@ -19,18 +19,19 @@ export const ChatsPage = () => {
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const fetchChat = useChatStore((state) => state.fetchChat);
   const activeChat = useChatStore((state) => state.activeChat);
+  const chats = useChatStore((state) => state.chats);
 
   const [isChatInfo, setIsChatInfo] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
 
-  // Determine if we should show chat based on URL (mobile-friendly)
-  // On mobile: show chat only if we have a chatId in URL
-  // On desktop: show chat if we have chatId OR activeChat
-  const showChat = isMobileView ? Boolean(chatId) : Boolean(chatId) || Boolean(activeChat);
+  // On mobile, brand-new direct chats may exist only in client state until the
+  // first message creates a persisted chat id. Those still need to open.
+  const showChat = Boolean(chatId) || Boolean(activeChat);
 
   // Sync active chat with URL params
   useEffect(() => {
     const chatFromUrl = getActiveChatFromUrl(chatId);
+    const currentActiveChat = useChatStore.getState().activeChat;
 
     if (chatId && !chatFromUrl) {
       // Chat ID in URL but not found in store - try to fetch it
@@ -40,17 +41,17 @@ export const ChatsPage = () => {
       }
     } else if (chatFromUrl) {
       // Update active chat from URL
-      if (!activeChat || activeChat.id !== chatFromUrl.id) {
+      if (!currentActiveChat || currentActiveChat.id !== chatFromUrl.id) {
         setActiveChat(chatFromUrl);
       }
-    } else if (!chatId && activeChat && activeChat.id) {
+    } else if (!chatId && currentActiveChat && currentActiveChat.id) {
       // No chat ID in URL but we have active chat with ID
       // On mobile, clear it to show chat list. On desktop, keep it.
       if (isMobileView) {
         setActiveChat(null);
       }
     }
-  }, [chatId, getActiveChatFromUrl, fetchChat, setActiveChat, activeChat, isMobileView]);
+  }, [chatId, chats, getActiveChatFromUrl, fetchChat, setActiveChat, isMobileView]);
 
   // Navigate when active chat gets an ID (new chat created)
   // But only if we're not navigating back from a chat (check location state)
@@ -106,6 +107,7 @@ export const ChatsPage = () => {
         <Chat
           toggleChatInfo={() => setIsChatInfo((prev) => !prev)}
           onBackClick={() => {
+            setActiveChat(null);
             // Navigate to chat list with state indicating we're going back
             navigate('/chats', { 
               state: { fromChatBack: true },

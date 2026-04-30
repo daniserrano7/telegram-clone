@@ -131,7 +131,11 @@ export const Sidebar = ({
     setIsSearchFocus(false);
     setSearch('');
 
-    const result = await openChatWithUser(userId);
+    const result = await openChatWithUser(userId, {
+      id: userId,
+      username,
+      avatarUrl,
+    });
     onChatSelect?.(result.chatId);
   };
 
